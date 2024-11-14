@@ -1,7 +1,9 @@
 "use client";
 
 import { MagicSpendStakeManagerAbi } from "@/abi/MagicSpendStakeManager";
+import BalanceCard from "@/components/balance-card";
 import { clipDecimals } from "@/utils";
+import { MagicSpend } from "@/utils/magic-spend";
 import config from "@/utils/wagmi-config";
 import { useEffect, useState } from "react";
 import { Chain, createPublicClient, formatEther, http, parseEther } from "viem";
@@ -24,6 +26,8 @@ export default function AddStake() {
     const { chains, switchChain } = useSwitchChain()
     const chainId = useChainId()
 
+	const magicSpend = new MagicSpend(config);
+
 	const { writeContract } = useWriteContract({
 		config,
 	});
@@ -38,13 +42,12 @@ export default function AddStake() {
 			address: "0xA38D9e0F911B1bEd03a038367A6e9667700CDEFe",
 			functionName: "addStake",
 			value: parseEther(amount),
-            // chainId: 84532,
 			args: [ETH, parseEther(amount), UNSTAKE_DELAY_SEC],
 		});
 
 	const handleMaxClick = () => {
 		if (tokenBalance) {
-			setAmount(clipDecimals(formatEther(tokenBalance.value)));
+			setAmount(formatEther(tokenBalance.value));
 		}
 	};
 
@@ -60,7 +63,7 @@ export default function AddStake() {
 	};
 
 	const [chainTokenBalances, setChainTokenBalances] = useState<
-		Array<{ chain: string; token: string; balance: string }>
+		Array<{ chain: string; token: string; balance: bigint }>
 	>([]);
 	const [isLoadingBalances, setIsLoadingBalances] = useState(true);
 
@@ -69,24 +72,7 @@ export default function AddStake() {
 			if (!address) return;
 
 			try {
-				const balances = await Promise.all(
-					config.chains.map(async (chain) => {
-						const client = createPublicClient({
-							chain,
-							transport: http(),
-						});
-
-						const balance = await client.getBalance({
-							address,
-						});
-
-						return {
-							chain: chain.name,
-							token: chain.nativeCurrency.symbol,
-							balance: clipDecimals(formatEther(balance)),
-						};
-					}),
-				);
+				const balances = await magicSpend.getBalances(address);
 
 				setChainTokenBalances(balances);
 			} catch (error) {
@@ -100,15 +86,15 @@ export default function AddStake() {
 	}, [address]);
 
 	const totalBalance = chainTokenBalances.reduce(
-		(acc, curr) => acc + parseFloat(curr.balance),
-		0,
+		(acc, curr) => acc + curr.balance,
+		BigInt(0),
 	);
 
-	const handleBalanceClick = (chainName: string, balance: string) => {
+	const handleBalanceClick = (chainName: string, balance: bigint) => {
 		const chain = config.chains.find((c) => c.name === chainName);
 		if (chain) {
 			setSelectedChain(chain);
-			setAmount(balance);
+			setAmount(formatEther(balance));
 		}
 	};
 
@@ -116,15 +102,11 @@ export default function AddStake() {
 		<div className="flex gap-8 p-4 max-w-7xl mx-auto">
 			<div className="flex-1">
 				<div className="mb-6">
-					<h2 className="text-xl font-bold mb-2">Total Balance</h2>
-					<div className="p-4 bg-purple-100 rounded-lg">
-						<span className="text-2xl font-bold text-purple-700">
-							{totalBalance} ETH
-						</span>
-					</div>
+					<h2 className="text-xl font-bold mb-2">Total Unstaked Balance</h2>
+					<BalanceCard balance={{ chain: "Total", token: "ETH", balance: totalBalance }} />
 				</div>
 
-				<h2 className="text-xl font-bold mb-4">Available Balances</h2>
+				<h2 className="text-xl font-bold mb-4">Available Unstaked Balances</h2>
 				<div className="grid grid-cols-3 gap-4">
 					{chainTokenBalances.map((item, index) => (
 						<div
@@ -134,7 +116,7 @@ export default function AddStake() {
 						>
 							<div className="font-medium text-gray-600">{item.chain}</div>
 							<div className="text-lg font-bold">
-								{item.balance} {item.token}
+								{clipDecimals(formatEther(item.balance))} {item.token}
 							</div>
 						</div>
 					))}
@@ -177,7 +159,9 @@ export default function AddStake() {
 						<input
 							type="number"
 							value={amount}
-							onChange={(e) => setAmount(e.target.value)}
+							onChange={(e) => {
+								setAmount(e.target.value)
+							}}
 							placeholder="0.0"
 							className="flex-1 p-2 border rounded"
 						/>
