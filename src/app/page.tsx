@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAccount, useBalance } from "wagmi";
 import Link from "next/link";
 import { formatEther } from "viem";
-import { clipDecimals } from "@/utils";
+import { clipDecimals, getChain } from "@/utils";
 import { MagicSpend, MagicSpendBalance, PimlicoMagicSpendStake } from "@/utils/magic-spend";
 import config from "@/utils/wagmi-config";
 import BalanceCard from "@/components/balance-card";
@@ -27,8 +27,9 @@ export default function Home() {
 		magicSpend.getStakes(address).then(setStakes);
 	}, [address]);
 
-	const balance = balances.reduce((acc, curr) => acc + curr.balance, BigInt(0));
+	const balance = stakes.reduce((acc, curr) => acc + curr.amount, BigInt(0));
 
+	console.log(stakes);
 	return (
 		<div className="p-8 max-w-7xl mx-auto">
 			<div className="mb-8">
@@ -38,34 +39,33 @@ export default function Home() {
 						Transfer Tokens
 					</Link>
 				</div>
+				<p className="text-gray-600 mb-4">
+					This is your total Magic Spend token balance, available across all connected chains. 
+					These tokens can be used instantly on any supported network, giving you seamless cross-chain liquidity.
+				</p>
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					{/* {balances.map((balance) => (
-						<BalanceCard key={balance.chain} balance={balance} />
-					))} */}
-					<BalanceCard balance={{ chain: "Sepolia", token: "ETH", balance }} />
+					<BalanceCard balance={{ token: "ETH", balance }} primary={true} />
 				</div>
 			</div>
 
 			<div className="mb-8">
 				<div className="flex items-center gap-4 mb-4">
-					<h2 className="text-2xl font-bold">Staking Overview</h2>
+					<h3 className="text-2xl font-bold">Staking Overview</h3>
 					<Link href="/add-stake" className="text-purple-600 hover:text-purple-800">
 						Add Stake
 					</Link>
 				</div>
+				<p className="text-gray-600 mb-4">
+					Below are your individual stakes across different chains. The sum of these stakes determines your total balance shown above.
+				</p>
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<div className="p-6 bg-white border rounded-lg">
-						<div className="text-gray-600">Sepolia</div>
-						<div className="text-2xl font-bold">0.00 ETH</div>
-					</div>
-					<div className="p-6 bg-white border rounded-lg">
-						<div className="text-gray-600">Base Sepolia</div>
-						<div className="text-2xl font-bold">0.00 ETH</div>
-					</div>
-					<div className="p-6 bg-white border rounded-lg">
-						<div className="text-gray-600">Arbitrum Sepolia</div>
-						<div className="text-2xl font-bold">0.00 ETH</div>
-					</div>
+					{stakes.map((stake) => (
+						<BalanceCard key={stake.chainId} balance={{
+							chain: getChain(stake.chainId).name,
+							token: 'ETH',
+							balance: stake.amount,
+						}} />
+					))}
 				</div>
 			</div>
 		</div>

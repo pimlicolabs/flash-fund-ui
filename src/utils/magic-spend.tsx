@@ -73,17 +73,17 @@ export type PimlicoMagicSpendSchema = [
 	{
 		Parameters: {
 			account: Address;
-			asset: Address;
+			token: Address;
 			amount: string;
-		};
+		}[];
 		ReturnType: MagicSpendAllowance;
 		Method: "pimlico_prepareMagicSpendAllowance";
 	},
 	{
-		Parameters: {
+		Parameters: [{
 			allowance: MagicSpendAllowance;
 			signature: Hex;
-		};
+		}];
 		ReturnType: {
 			withdrawal: MagicSpendWithdrawal;
 			signature: Hex;
@@ -91,7 +91,13 @@ export type PimlicoMagicSpendSchema = [
 		Method: "pimlico_grantMagicSpendAllowance";
 	},
 	{
-		Parameters: Record<string, never>;
+		Parameters: [{
+			token: Address;
+			recipient: Address;
+			amount: string;
+			signature: Hex;
+			salt: Hex;
+		}];
 		ReturnType: {
 			signature: Hex;
 			withdrawal: MagicSpendWithdrawal;
@@ -99,19 +105,18 @@ export type PimlicoMagicSpendSchema = [
 		Method: "pimlico_sponsorMagicSpendWithdrawal";
 	},
 	{
-		Parameters: {
-			operator: Address;
-		};
+		Parameters: [Address];
 		ReturnType: {
 			signature: Hex;
-		};
+			assets: (MagicSpendAssetAllowance & { used: bigint })[];
+		}[];
 		Method: "pimlico_getMagicSpendAllowancesByOperator";
 	},
 ];
 
 export type PimlicoMagicSpendPrepareAllowanceParams = {
 	account: Address;
-	asset: Address;
+	token: Address;
 	amount: string;
 };
 
@@ -181,10 +186,53 @@ export class MagicSpend {
 		}));
 	}
 
+	async getAllowancesByOperator(operator: Address) {
+		const allowances = await this.client.request({
+			method: "pimlico_getMagicSpendAllowancesByOperator",
+			params: [operator],
+		});
+
+		return allowances.map((allowance) => ({
+			...allowance,
+			assets: allowance.assets.map((asset) => ({
+				...asset,
+				amount: BigInt(asset.amount),
+				used: BigInt(asset.used),
+			})),
+		}));
+	}
+
 	async prepareAllowance(params: PimlicoMagicSpendPrepareAllowanceParams) {
 		return this.client.request({
 			method: "pimlico_prepareMagicSpendAllowance",
-			params,
+			params: [params],
+		});
+	}
+
+	async grantAllowance(allowance: MagicSpendAllowance, signature: Hex) {
+		return this.client.request({
+			method: "pimlico_grantMagicSpendAllowance",
+			params: [{ allowance, signature }],
+		});
+	}
+
+	async sponsorWithdrawal({
+		token,
+		recipient,
+		amount,
+		signature,
+	}: {
+		token: Address, recipient: Address, amount: string, signature: Hex
+	}) {
+		return this.client.request({
+			method: "pimlico_sponsorMagicSpendWithdrawal",
+			params: [{
+				token,
+				recipient,
+				amount,
+				signature,
+				salt: "0x000000",
+			}],
 		});
 	}
 }

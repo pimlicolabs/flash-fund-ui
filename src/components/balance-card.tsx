@@ -2,14 +2,6 @@ import { clipDecimals } from "@/utils";
 import { MagicSpendBalance } from "@/utils/magic-spend";
 import { formatEther } from "viem";
 
-	// return (
-	// 	<div className="p-6 bg-purple-100 rounded-lg">
-	// 		{chain && <div className="text-2xl font-bold text-purple-700">{chain}</div>}
-	// 		<div className="text-2xl font-bold text-purple-700">
-	// 			{clipDecimals(formatEther(balance.balance))} ETH
-	// 		</div>
-	// 	</div>
-	// );
 
 export default function BalanceCard({
 	balance,
@@ -20,7 +12,7 @@ export default function BalanceCard({
 }) {
 	const chain = "chain" in balance ? balance.chain : undefined;
 
-	if (primary) {
+	if (primary === true) {
 		return (
 			<div className="p-6 bg-purple-100 rounded-lg">
 				{chain && <div className="text-2xl font-bold text-purple-700">{chain}</div>}
@@ -32,11 +24,11 @@ export default function BalanceCard({
 	}
 
 	return (
-		<>
-			{chain && <div className="text-2xl font-bold text-purple-700">{chain}</div>}
-			<div className="text-lg font-bold">
+		<div className="p-6 bg-white border rounded-lg">
+			{chain && <div className="text-gray-600">{chain}</div>}
+			<div className="text-2xl font-bold">
 				{clipDecimals(formatEther(balance.balance))} {balance.token}
 			</div>
-		</>
+		</div>
 	);
 }

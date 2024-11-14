@@ -1,27 +1,50 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { useAccount, useBalance, useSendTransaction } from "wagmi";
+import { useAccount, useBalance, useChainId, useEnsName, useSendTransaction, useSignMessage, useSignTypedData } from "wagmi";
 import { useWriteContract, useEnsAddress } from "wagmi";
-import { parseEther, formatEther, isAddress } from "viem";
-import { clipDecimals } from "@/utils";
+import { parseEther, formatEther, isAddress, PrivateKeyAccount, getContract, Address, Hex } from "viem";
+import { clipDecimals, ETH } from "@/utils";
 import { normalize } from 'viem/ens'
 import { useDebounce } from 'use-debounce';
+import { MagicSpend, MagicSpendAllowance } from "@/utils/magic-spend";
+import config from "@/utils/wagmi-config";
+import { SessionKey } from "@/utils/session-key";
+import { MagicSpendStakeManagerAbi } from "@/abi/MagicSpendStakeManager";
+import { MagicSpendWithdrawalManagerAbi } from "@/abi/MagicSpendWithdrawalManager";
+import { sepolia } from "viem/chains";
 
 export default function Home() {
 	const [isMounted, setIsMounted] = useState(false);
-	const [amount, setAmount] = useState<string>("0");
-	const [recipientInput, setRecipientInput] = useState("vitalik.eth");
+	const [amount, setAmount] = useState<string>("0.01");
+	const [recipientInput, setRecipientInput] = useState("0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1");
 	const [isLoading, setIsLoading] = useState(false);
 	const { address } = useAccount();
+	const { signTypedDataAsync } = useSignTypedData({
+		config,
+	})
+	const { signMessageAsync } = useSignMessage({
+		config,
+	})
 	const { data: tokenBalance } = useBalance({
 		address,
 	});
+    const chainId = useChainId()
+	console.log('chainId')
+	console.log(chainId)
 	const { data: hash, sendTransaction } = useSendTransaction()
-	console.log(hash)
+    const [sessionAccount, setSessionAccount] = useState<PrivateKeyAccount | null>(null);
+    const magicSpend = new MagicSpend(config);
 
 	useEffect(() => {
         setIsMounted(true);
+        const fetchSessionKey = async () => {
+            const sessionKey = new SessionKey();
+            const key = await sessionKey.getKey();
+            setSessionAccount(key);
+        }
+
+        fetchSessionKey();
     }, []);
 
 	const [debouncedRecipient] = useDebounce(
@@ -29,13 +52,10 @@ export default function Home() {
 		500
 	);
 
-	console.log(debouncedRecipient)
-
 	const { data: ensAddress } = useEnsAddress({
-		// name: normalize(debouncedRecipient),
-		name: normalize('wevm.eth'),
+		name: normalize(debouncedRecipient),
+        chainId: 1,
 	})
-	console.log(ensAddress)
 
 	const recipientAddress = ensAddress || recipientInput;
 
@@ -47,16 +67,136 @@ export default function Home() {
 		}
 	};
 
+	const signMagicSpendAllowance = async (allowance: MagicSpendAllowance) => {
+		console.log('allowance')
+		console.log(allowance)
+
+		console.log('address')
+		console.log(address)
+
+		const sig = await signTypedDataAsync({
+			types: {
+				AssetAllowance: [
+					{ name: 'token', type: 'address' },
+					{ name: 'amount', type: 'uint128' },
+					{ name: 'chainId', type: 'uint128' },
+				],
+				Allowance: [
+					{ name: 'account', type: 'address' },
+					{ name: 'assets', type: 'AssetAllowance[]' },
+					{ name: 'validUntil', type: 'uint128' },
+					{ name: 'validAfter', type: 'uint128' },
+					{ name: 'salt', type: 'uint128' },
+					{ name: 'operator', type: 'address' },
+				]
+			},
+			primaryType: 'Allowance',
+			message: allowance,
+		})
+
+		return sig;
+	}
+
 	const handleTransfer = async () => {
 		if (!recipientAddress) return;
+
+        if (!sessionAccount) return;
+
+		if (!address) return;
+
+        console.log(sessionAccount);
 
 		try {
 			setIsLoading(true);
 
-			sendTransaction({
-				to: recipientAddress as `0x${string}`,
-				value: parseEther(amount),
-			});
+            // - Check user's active allowances
+            const allowances = await magicSpend.getAllowancesByOperator(sessionAccount.address)
+
+			const totalAllowance = allowances.flatMap(a => a.assets)
+				.reduce((acc: bigint, curr) => acc + curr.amount - curr.used, BigInt(0));
+
+			// - Check if it's enough to cover the transfer
+			if (totalAllowance < parseEther(amount)) {
+				// -- If not, create a new allowance
+				const newAllowance = await magicSpend.prepareAllowance({
+					account: address,
+					token: ETH,
+					amount: `0x${(parseEther(amount) * BigInt(3)).toString(16)}`,
+				})
+
+				const allowanceWithOperator = {
+					...newAllowance,
+					operator: sessionAccount.address,
+				}
+
+
+				const stakeManager = getContract({
+					address: '0xA38D9e0F911B1bEd03a038367A6e9667700CDEFe',
+					abi: MagicSpendStakeManagerAbi,
+					client: config.getClient({ chainId: 11155111 }),
+				})
+
+				const h = await stakeManager.read.getAllowanceHash([{
+					...allowanceWithOperator,
+					validAfter: Number(allowanceWithOperator.validAfter),
+					validUntil: Number(allowanceWithOperator.validUntil),
+					salt: Number(allowanceWithOperator.salt),
+				}])
+
+				console.log('h')
+				console.log(h)
+
+				const signature = await signMessageAsync({
+					message: {
+						raw: h,
+					}
+				})
+
+				// - Grant the allowance to Pimlico
+				const k = await magicSpend.grantAllowance(allowanceWithOperator, signature)
+				console.log('k')
+				console.log(k)
+			}
+
+			// - Request the withdrawal
+			const withdrawalManagerContract = getContract({
+				abi: MagicSpendWithdrawalManagerAbi,
+				address: "0x3F4A20335e9045f71411b04E9F53814f5b8d725d",
+				client: config.getClient({ chainId: 11155111 }),
+			})
+			
+			const withdrawalHash = await withdrawalManagerContract.read.getWithdrawalHash([
+				{
+					token: ETH,
+					amount: parseEther(amount),
+					chainId: BigInt(sepolia.id),
+					recipient: recipientAddress as Address,
+					preCalls: [],
+					postCalls: [],
+					validUntil: Number(0),
+					validAfter: Number(0),
+					salt: 0
+				}
+			]) as Hex;
+
+			console.log('withdrawalHash')
+			console.log(withdrawalHash)
+
+			const operatorRequestSignature = await sessionAccount.signMessage({
+				message: {
+					raw: withdrawalHash
+				}
+			})
+
+			const withdrawal = await magicSpend.sponsorWithdrawal({
+				token: ETH,
+				recipient: recipientAddress as Address,
+				amount: `0x${(parseEther(amount)).toString(16)}`,
+				signature: operatorRequestSignature,
+			})
+
+			console.log('withdrawal')
+			console.log(withdrawal)
 		} catch (error) {
 			console.error("Error transferring:", error);
 		} finally {
@@ -106,7 +246,7 @@ export default function Home() {
 
 				<button
 					onClick={handleTransfer}
-					disabled={!writeContract || isLoading || amount === "0" || !isAddress(recipientAddress)}
+					// disabled={isLoading || amount === "0" || !isAddress(recipientAddress) || !sessionAccount !== null}
 					className="w-full py-2 bg-purple-500 text-white rounded disabled:opacity-50"
 				>
 					{isLoading ? "Transferring..." : "Transfer"}

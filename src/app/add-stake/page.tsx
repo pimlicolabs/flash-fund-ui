@@ -2,7 +2,7 @@
 
 import { MagicSpendStakeManagerAbi } from "@/abi/MagicSpendStakeManager";
 import BalanceCard from "@/components/balance-card";
-import { clipDecimals } from "@/utils";
+import { clipDecimals, ETH } from "@/utils";
 import { MagicSpend } from "@/utils/magic-spend";
 import config from "@/utils/wagmi-config";
 import { useEffect, useState } from "react";
@@ -10,7 +10,6 @@ import { Chain, createPublicClient, formatEther, http, parseEther } from "viem";
 import { useAccount, useBalance, useChainId, useSwitchChain } from "wagmi";
 import { useWriteContract } from "wagmi";
 
-const ETH = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const UNSTAKE_DELAY_SEC = 86400;
 
 export default function AddStake() {

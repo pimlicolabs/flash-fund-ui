@@ -20,8 +20,8 @@ const NavBar = () => {
 				<Link href="/add-stake" className="hover:text-primary">
 					Add Stake
 				</Link>
-				<Link href="/remove-stake" className="hover:text-primary">
-					Remove Stake
+				<Link href="/transfer" className="hover:text-primary">
+					Transfer
 				</Link>
 			</div>
 			<div className="my-auto flex"></div>
