@@ -17,8 +17,9 @@ import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { toSafeSmartAccount } from "permissionless/accounts";
 import { createSmartAccountClient } from "permissionless";
+import { Bounce, toast } from 'react-toastify';
 
-export default function Home() {
+export default function Transfer() {
 	const [isMounted, setIsMounted] = useState(false);
 	const [amount, setAmount] = useState<string>("0.01");
 	const [recipientInput, setRecipientInput] = useState("0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1");
@@ -261,10 +262,43 @@ export default function Home() {
 				hash: userOpHash
 			})
 			
-			console.log(`Transaction hash: ${receipt.receipt.transactionHash}`);		
+			console.log(`Transaction hash: ${receipt.receipt.transactionHash}`);
+			toast(
+				<div>
+					🦄 Transaction successful!
+					<br />
+					<a 
+						href={`https://sepolia.etherscan.io/tx/${receipt.receipt.transactionHash}`}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-purple-500 hover:text-purple-700"
+					>
+						View on Etherscan
+					</a>
+				</div>,
+				{
+					position: "bottom-right",
+					autoClose: 5000,
+					hideProgressBar: false,
+					closeOnClick: true,
+					pauseOnHover: true,
+					draggable: true,
+					progress: undefined,
+					theme: "light",
+					transition: Bounce,
+				}
+			);
 		} catch (error) {
 			console.error("Error transferring");
 			console.error(error);
+			toast.error('Transaction failed! Please try again.', {
+				position: "top-right",
+				autoClose: 5000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+			});
 		} finally {
 			setIsLoading(false);
 		}

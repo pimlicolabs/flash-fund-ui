@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import NavBar from "@/components/navbar";
 import RainbowProvider from "@/utils/rainbow-provider";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const geistSans = localFont({
 	src: "./fonts/GeistVF.woff",
@@ -34,6 +36,7 @@ export default function RootLayout({
 					<NavBar />
 					{children}
 				</RainbowProvider>
+				<ToastContainer />
 			</body>
 		</html>
 	);
