@@ -98,10 +98,10 @@ export type PimlicoMagicSpendSchema = [
 			signature: Hex;
 			salt: Hex;
 		}];
-		ReturnType: {
-			signature: Hex;
-			withdrawal: MagicSpendWithdrawal;
-		};
+		ReturnType: [
+			MagicSpendWithdrawal,
+			Hex
+		];
 		Method: "pimlico_sponsorMagicSpendWithdrawal";
 	},
 	{

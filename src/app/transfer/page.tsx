@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useAccount, useBalance, useChainId, useEnsName, useSendTransaction, useSignMessage, useSignTypedData } from "wagmi";
 import { useWriteContract, useEnsAddress } from "wagmi";
-import { parseEther, formatEther, isAddress, PrivateKeyAccount, getContract, Address, Hex } from "viem";
+import { parseEther, formatEther, isAddress, PrivateKeyAccount, getContract, Address, Hex, http, encodeFunctionData } from "viem";
 import { clipDecimals, ETH } from "@/utils";
 import { normalize } from 'viem/ens'
 import { useDebounce } from 'use-debounce';
@@ -13,6 +13,10 @@ import { SessionKey } from "@/utils/session-key";
 import { MagicSpendStakeManagerAbi } from "@/abi/MagicSpendStakeManager";
 import { MagicSpendWithdrawalManagerAbi } from "@/abi/MagicSpendWithdrawalManager";
 import { sepolia } from "viem/chains";
+import { createPimlicoClient } from "permissionless/clients/pimlico";
+import { entryPoint07Address } from "viem/account-abstraction";
+import { toSafeSmartAccount } from "permissionless/accounts";
+import { createSmartAccountClient } from "permissionless";
 
 export default function Home() {
 	const [isMounted, setIsMounted] = useState(false);
@@ -188,17 +192,79 @@ export default function Home() {
 				}
 			})
 
-			const withdrawal = await magicSpend.sponsorWithdrawal({
+			const [withdrawal, signature] = await magicSpend.sponsorWithdrawal({
 				token: ETH,
 				recipient: recipientAddress as Address,
 				amount: `0x${(parseEther(amount)).toString(16)}`,
 				signature: operatorRequestSignature,
 			})
 
-			console.log('withdrawal')
-			console.log(withdrawal)
+			// - Create the user operation
+			const publicClient = config.getClient({ chainId: 11155111 })
+
+			const paymasterClient = createPimlicoClient({
+				transport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL),
+				entryPoint: {
+					address: entryPoint07Address,
+					version: "0.7",
+				},
+			})
+
+			const safeAccount = await toSafeSmartAccount({
+				client: publicClient,
+				entryPoint: {
+					address: entryPoint07Address,
+					version: "0.7",
+				},
+				owners: [sessionAccount],
+				version: "1.4.1",
+			})
+
+			const smartAccountClient = createSmartAccountClient({
+				account: safeAccount,
+				chain: sepolia,
+				paymaster: paymasterClient,
+				bundlerTransport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL),
+				userOperation: {
+					estimateFeesPerGas: async () => (await paymasterClient.getUserOperationGasPrice()).fast,
+				},
+			})
+
+			const magicSpendCallData = encodeFunctionData({
+				abi: MagicSpendWithdrawalManagerAbi,
+				functionName: 'withdraw',
+				args: [
+					{
+						...withdrawal,
+						validUntil: Number(withdrawal.validUntil),
+						validAfter: Number(withdrawal.validAfter),
+						salt: Number(withdrawal.salt),
+					},
+					signature,
+				]
+			})
+			
+			// Send user operation and withdraw funds
+			// You can add subsequent calls after the withdrawal, like "buy NFT on OpenSea for ETH"
+			const userOpHash = await smartAccountClient.sendUserOperation({
+				account: safeAccount,
+				calls: [
+					{
+						to: "0x3F4A20335e9045f71411b04E9F53814f5b8d725d",
+						value: parseEther("0"),
+						data: magicSpendCallData,
+					}
+				]
+			})
+
+			const receipt = await paymasterClient.waitForUserOperationReceipt({
+				hash: userOpHash
+			})
+			
+			console.log(`Transaction hash: ${receipt.receipt.transactionHash}`);		
 		} catch (error) {
-			console.error("Error transferring:", error);
+			console.error("Error transferring");
+			console.error(error);
 		} finally {
 			setIsLoading(false);
 		}
