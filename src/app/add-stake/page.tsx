@@ -12,6 +12,7 @@ const ETH = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const UNSTAKE_DELAY_SEC = 86400;
 
 export default function AddStake() {
+	const [isMounted, setIsMounted] = useState(false);
 	const [amount, setAmount] = useState<string>("0");
 	const [selectedChain, setSelectedChain] = useState<Chain>(config.chains[0]);
 	const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +27,10 @@ export default function AddStake() {
 	const { writeContract } = useWriteContract({
 		config,
 	});
+
+	useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
 	const write = async () =>
 		writeContract({
@@ -44,8 +49,6 @@ export default function AddStake() {
 	};
 
 	const handleStake = async () => {
-		console.log("handleStake", amount);
-
         try {
 		  setIsLoading(true)
 		  await write()
@@ -187,7 +190,7 @@ export default function AddStake() {
 					</div>
 				</div>
 
-				{chainId === selectedChain.id ? (
+				{isMounted && chainId === selectedChain.id ? (
                     <>
                         <button
                             onClick={handleStake}
