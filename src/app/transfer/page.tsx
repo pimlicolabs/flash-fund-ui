@@ -30,7 +30,7 @@ import config from "@/utils/wagmi-config";
 import { SessionKey } from "@/utils/session-key";
 import { MagicSpendStakeManagerAbi } from "@/abi/MagicSpendStakeManager";
 import { MagicSpendWithdrawalManagerAbi } from "@/abi/MagicSpendWithdrawalManager";
-import { sepolia, Chain } from "viem/chains";
+import { sepolia, Chain, arbitrumSepolia, baseSepolia } from "viem/chains";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { toSafeSmartAccount } from "permissionless/accounts";
@@ -45,7 +45,7 @@ export default function Transfer() {
 	);
 	const [isLoading, setIsLoading] = useState(false);
 	const [transferState, setTransferState] = useState("");
-	const [selectedChain, setSelectedChain] = useState<Chain>(sepolia);
+	const [selectedChain, setSelectedChain] = useState<typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia>(sepolia);
 	const { address } = useAccount();
 	const { signTypedDataAsync } = useSignTypedData({
 		config,
