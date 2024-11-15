@@ -11,6 +11,7 @@ import {
 	createClient,
 	createPublicClient,
 } from "viem";
+import { sepolia } from "viem/chains";
 import { Config } from "wagmi";
 
 export type MagicSpendCall = {
@@ -128,20 +129,36 @@ export type MagicSpendBalance = {
 };
 
 export class MagicSpend {
-	client: Client<
+	wagmiConfig: Config;
+	chainId: number;
+	pimlicoApiUrl: string;
+
+	constructor(wagmiConfig: Config) {
+		this.wagmiConfig = wagmiConfig;
+		this.chainId = sepolia.id;
+		const pimlicoApiUrl = process.env.NEXT_PUBLIC_PIMLICO_API_URL;
+
+		if (!pimlicoApiUrl) {
+			throw new Error("NEXT_PUBLIC_PIMLICO_API_URL is not set");
+		}
+
+		this.pimlicoApiUrl = pimlicoApiUrl;
+	}
+
+	async setChainId(chainId: number) {
+		this.chainId = chainId;
+		console.log("setChainId", this.chainId);
+	}
+
+	private getClient(): Client<
 		Transport,
 		Chain | undefined,
 		Account | undefined,
 		PimlicoMagicSpendSchema
-	>;
-
-	wagmiConfig: Config;
-
-	constructor(wagmiConfig: Config) {
-		this.client = createClient({
-			transport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL),
+	> {
+		return createPublicClient({
+			transport: http(this.pimlicoApiUrl.replace("CHAIN_ID", this.chainId.toString())),
 		});
-		this.wagmiConfig = wagmiConfig;
 	}
 
 	async getBalances(account: Address): Promise<MagicSpendBalance[]> {
@@ -166,7 +183,7 @@ export class MagicSpend {
 	}
 
 	async getStakes(account: Address) {
-		const stakes = await this.client.request({
+		const stakes = await this.getClient().request({
 			method: "pimlico_getMagicSpendStakes",
 			params: [
 				{
@@ -188,7 +205,7 @@ export class MagicSpend {
 	}
 
 	async getAllowancesByOperator(operator: Address) {
-		const allowances = await this.client.request({
+		const allowances = await this.getClient().request({
 			method: "pimlico_getMagicSpendAllowancesByOperator",
 			params: [operator],
 		});
@@ -204,14 +221,14 @@ export class MagicSpend {
 	}
 
 	async prepareAllowance(params: PimlicoMagicSpendPrepareAllowanceParams) {
-		return this.client.request({
+		return this.getClient().request({
 			method: "pimlico_prepareMagicSpendAllowance",
 			params: [params],
 		});
 	}
 
 	async grantAllowance(allowance: MagicSpendAllowance, signature: Hex) {
-		return this.client.request({
+		return this.getClient().request({
 			method: "pimlico_grantMagicSpendAllowance",
 			params: [{ allowance, signature }],
 		});
@@ -228,7 +245,7 @@ export class MagicSpend {
 		amount: string;
 		signature: Hex;
 	}) {
-		return this.client.request({
+		return this.getClient().request({
 			method: "pimlico_sponsorMagicSpendWithdrawal",
 			params: [
 				{

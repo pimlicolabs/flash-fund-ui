@@ -30,7 +30,7 @@ import config from "@/utils/wagmi-config";
 import { SessionKey } from "@/utils/session-key";
 import { MagicSpendStakeManagerAbi } from "@/abi/MagicSpendStakeManager";
 import { MagicSpendWithdrawalManagerAbi } from "@/abi/MagicSpendWithdrawalManager";
-import { sepolia } from "viem/chains";
+import { sepolia, Chain } from "viem/chains";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { toSafeSmartAccount } from "permissionless/accounts";
@@ -45,6 +45,7 @@ export default function Transfer() {
 	);
 	const [isLoading, setIsLoading] = useState(false);
 	const [transferState, setTransferState] = useState("");
+	const [selectedChain, setSelectedChain] = useState<Chain>(sepolia);
 	const { address } = useAccount();
 	const { signTypedDataAsync } = useSignTypedData({
 		config,
@@ -54,6 +55,7 @@ export default function Transfer() {
 	});
 	const { data: tokenBalance } = useBalance({
 		address,
+		chainId: selectedChain.id
 	});
 	const chainId = useChainId();
 
@@ -73,6 +75,10 @@ export default function Transfer() {
 
 		fetchSessionKey();
 	}, []);
+
+	useEffect(() => {
+		magicSpend.setChainId(selectedChain.id);
+	}, [selectedChain]);
 
 	const [debouncedRecipient] = useDebounce(
 		recipientInput.replace(/^\.+|\.+$/g, ""),
@@ -121,6 +127,8 @@ export default function Transfer() {
 		if (!sessionAccount) return;
 		if (!address) return;
 
+		magicSpend.setChainId(selectedChain.id);
+
 		try {
 			setIsLoading(true);
 			setTransferState("Checking existing allowances...");
@@ -155,7 +163,7 @@ export default function Transfer() {
 				const stakeManager = getContract({
 					address: "0xA38D9e0F911B1bEd03a038367A6e9667700CDEFe",
 					abi: MagicSpendStakeManagerAbi,
-					client: config.getClient({ chainId: 11155111 }),
+					client: config.getClient({ chainId: selectedChain.id }),
 				});
 
 				const h = await stakeManager.read.getAllowanceHash([
@@ -185,7 +193,7 @@ export default function Transfer() {
 			const withdrawalManagerContract = getContract({
 				abi: MagicSpendWithdrawalManagerAbi,
 				address: "0x3F4A20335e9045f71411b04E9F53814f5b8d725d",
-				client: config.getClient({ chainId: 11155111 }),
+				client: config.getClient({ chainId: selectedChain.id }),
 			});
 
 			const withdrawalHash =
@@ -193,7 +201,7 @@ export default function Transfer() {
 					{
 						token: ETH,
 						amount: parseEther(amount),
-						chainId: BigInt(sepolia.id),
+						chainId: BigInt(selectedChain.id),
 						recipient: recipientAddress as Address,
 						preCalls: [],
 						postCalls: [],
@@ -218,10 +226,10 @@ export default function Transfer() {
 			});
 
 			// - Create the user operation
-			const publicClient = config.getClient({ chainId: 11155111 });
+			const publicClient = config.getClient({ chainId: selectedChain.id });
 
 			const paymasterClient = createPimlicoClient({
-				transport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL),
+				transport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL?.replace("CHAIN_ID", selectedChain.id.toString())),
 				entryPoint: {
 					address: entryPoint07Address,
 					version: "0.7",
@@ -240,9 +248,9 @@ export default function Transfer() {
 
 			const smartAccountClient = createSmartAccountClient({
 				account: safeAccount,
-				chain: sepolia,
+				chain: selectedChain,
 				paymaster: paymasterClient,
-				bundlerTransport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL),
+				bundlerTransport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL?.replace("CHAIN_ID", selectedChain.id.toString())),
 				userOperation: {
 					estimateFeesPerGas: async () =>
 						(await paymasterClient.getUserOperationGasPrice()).fast,
@@ -288,7 +296,7 @@ export default function Transfer() {
 					🦄 Transaction successful!
 					<br />
 					<a
-						href={`https://sepolia.etherscan.io/tx/${receipt.receipt.transactionHash}`}
+						href={`${selectedChain.blockExplorers?.default.url}/tx/${receipt.receipt.transactionHash}`}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="text-purple-500 hover:text-purple-700"
@@ -330,6 +338,26 @@ export default function Transfer() {
 		<div className="flex justify-center p-4">
 			<div className="max-w-lg w-full">
 				<h1 className="text-2xl font-bold mb-6">Transfer ETH</h1>
+
+				<div className="mb-4">
+					<label className="block text-sm font-medium mb-2">
+						Chain
+					</label>
+					<select
+						value={selectedChain.id}
+						onChange={(e) => {
+							const chain = config.chains.find(c => c.id === Number(e.target.value));
+							if (chain) setSelectedChain(chain);
+						}}
+						className="w-full p-2 border rounded"
+					>
+						{config.chains.map((chain) => (
+							<option key={chain.id} value={chain.id}>
+								{chain.name}
+							</option>
+						))}
+					</select>
+				</div>
 
 				<div className="mb-4">
 					<label className="block text-sm font-medium mb-2">
