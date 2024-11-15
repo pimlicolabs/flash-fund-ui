@@ -44,6 +44,7 @@ export default function Transfer() {
 		"0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1",
 	);
 	const [isLoading, setIsLoading] = useState(false);
+	const [transferState, setTransferState] = useState("");
 	const { address } = useAccount();
 	const { signTypedDataAsync } = useSignTypedData({
 		config,
@@ -117,13 +118,12 @@ export default function Transfer() {
 
 	const handleTransfer = async () => {
 		if (!recipientAddress) return;
-
 		if (!sessionAccount) return;
-
 		if (!address) return;
 
 		try {
 			setIsLoading(true);
+			setTransferState("Checking existing allowances...");
 
 			// - Check user's active allowances
 			const allowances = await magicSpend.getAllowancesByOperator(
@@ -139,6 +139,7 @@ export default function Transfer() {
 
 			// - Check if it's enough to cover the transfer
 			if (totalAllowance < parseEther(amount)) {
+				setTransferState("Creating new allowance...");
 				// -- If not, create a new allowance
 				const newAllowance = await magicSpend.prepareAllowance({
 					account: address,
@@ -179,6 +180,7 @@ export default function Transfer() {
 				);
 			}
 
+			setTransferState("Preparing withdrawal...");
 			// - Request the withdrawal
 			const withdrawalManagerContract = getContract({
 				abi: MagicSpendWithdrawalManagerAbi,
@@ -207,6 +209,7 @@ export default function Transfer() {
 				},
 			});
 
+			setTransferState("Creating user operation...");
 			const [withdrawal, signature] = await magicSpend.sponsorWithdrawal({
 				token: ETH,
 				recipient: recipientAddress as Address,
@@ -260,6 +263,7 @@ export default function Transfer() {
 				],
 			});
 
+			setTransferState("Sending user operation...");
 			// Send user operation and withdraw funds
 			// You can add subsequent calls after the withdrawal, like "buy NFT on OpenSea for ETH"
 			const userOpHash = await smartAccountClient.sendUserOperation({
@@ -273,10 +277,12 @@ export default function Transfer() {
 				],
 			});
 
+			setTransferState("Waiting for transaction confirmation...");
 			const receipt = await paymasterClient.waitForUserOperationReceipt({
 				hash: userOpHash,
 			});
 
+			setTransferState("Transaction confirmed!");
 			toast(
 				<div>
 					🦄 Transaction successful!
@@ -305,6 +311,7 @@ export default function Transfer() {
 		} catch (error) {
 			console.error("Error transferring");
 			console.error(error);
+			setTransferState("Transaction failed!");
 			toast.error("Transaction failed! Please try again.", {
 				position: "top-right",
 				autoClose: 5000,
@@ -315,6 +322,7 @@ export default function Transfer() {
 			});
 		} finally {
 			setIsLoading(false);
+			setTimeout(() => setTransferState(""), 3000);
 		}
 	};
 
@@ -363,9 +371,14 @@ export default function Transfer() {
 				<button
 					onClick={handleTransfer}
 					disabled={isLoading || parseEther(amount) === BigInt(0) || !isAddress(recipientAddress) || sessionAccount === null}
-					className="w-full py-2 bg-purple-500 text-white rounded disabled:opacity-50"
+					className="w-full py-2 bg-purple-500 text-white rounded disabled:opacity-50 relative overflow-hidden"
 				>
-					{isLoading ? "Transferring..." : "Transfer"}
+					<span className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isLoading ? 'opacity-100' : 'opacity-0'}`}>
+						<span className="animate-pulse">{transferState}</span>
+					</span>
+					<span className={`transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+						Transfer
+					</span>
 				</button>
 
 				{parseFloat(amount) >= 0.1 && (
