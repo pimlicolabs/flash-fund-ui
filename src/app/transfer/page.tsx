@@ -41,7 +41,7 @@ export default function Transfer() {
 	const [isMounted, setIsMounted] = useState(false);
 	const [amount, setAmount] = useState<string>("0.01");
 	const [recipientInput, setRecipientInput] = useState(
-		"0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1",
+		"0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 	);
 	const [isLoading, setIsLoading] = useState(false);
 	const [transferState, setTransferState] = useState("");
