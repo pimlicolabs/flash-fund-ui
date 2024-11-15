@@ -80,10 +80,12 @@ export type PimlicoMagicSpendSchema = [
 		Method: "pimlico_prepareMagicSpendAllowance";
 	},
 	{
-		Parameters: [{
-			allowance: MagicSpendAllowance;
-			signature: Hex;
-		}];
+		Parameters: [
+			{
+				allowance: MagicSpendAllowance;
+				signature: Hex;
+			},
+		];
 		ReturnType: {
 			withdrawal: MagicSpendWithdrawal;
 			signature: Hex;
@@ -91,17 +93,16 @@ export type PimlicoMagicSpendSchema = [
 		Method: "pimlico_grantMagicSpendAllowance";
 	},
 	{
-		Parameters: [{
-			token: Address;
-			recipient: Address;
-			amount: string;
-			signature: Hex;
-			salt: Hex;
-		}];
-		ReturnType: [
-			MagicSpendWithdrawal,
-			Hex
+		Parameters: [
+			{
+				token: Address;
+				recipient: Address;
+				amount: string;
+				signature: Hex;
+				salt: Hex;
+			},
 		];
+		ReturnType: [MagicSpendWithdrawal, Hex];
 		Method: "pimlico_sponsorMagicSpendWithdrawal";
 	},
 	{
@@ -222,17 +223,22 @@ export class MagicSpend {
 		amount,
 		signature,
 	}: {
-		token: Address, recipient: Address, amount: string, signature: Hex
+		token: Address;
+		recipient: Address;
+		amount: string;
+		signature: Hex;
 	}) {
 		return this.client.request({
 			method: "pimlico_sponsorMagicSpendWithdrawal",
-			params: [{
-				token,
-				recipient,
-				amount,
-				signature,
-				salt: "0x000000",
-			}],
+			params: [
+				{
+					token,
+					recipient,
+					amount,
+					signature,
+					salt: "0x000000",
+				},
+			],
 		});
 	}
 }

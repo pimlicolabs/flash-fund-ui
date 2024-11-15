@@ -23,6 +23,9 @@ const NavBar = () => {
 				<Link href="/transfer" className="hover:text-primary">
 					Transfer
 				</Link>
+				<Link href="https://docs.pimlico.io/infra/magic-spend" target="_blank" className="hover:text-primary">
+					Docs
+				</Link>
 			</div>
 			<div className="my-auto flex"></div>
 			<div>

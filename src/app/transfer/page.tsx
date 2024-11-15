@@ -1,12 +1,30 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { useAccount, useBalance, useChainId, useEnsName, useSendTransaction, useSignMessage, useSignTypedData } from "wagmi";
+import {
+	useAccount,
+	useBalance,
+	useChainId,
+	useEnsName,
+	useSendTransaction,
+	useSignMessage,
+	useSignTypedData,
+} from "wagmi";
 import { useWriteContract, useEnsAddress } from "wagmi";
-import { parseEther, formatEther, isAddress, PrivateKeyAccount, getContract, Address, Hex, http, encodeFunctionData } from "viem";
+import {
+	parseEther,
+	formatEther,
+	isAddress,
+	PrivateKeyAccount,
+	getContract,
+	Address,
+	Hex,
+	http,
+	encodeFunctionData,
+} from "viem";
 import { clipDecimals, ETH } from "@/utils";
-import { normalize } from 'viem/ens'
-import { useDebounce } from 'use-debounce';
+import { normalize } from "viem/ens";
+import { useDebounce } from "use-debounce";
 import { MagicSpend, MagicSpendAllowance } from "@/utils/magic-spend";
 import config from "@/utils/wagmi-config";
 import { SessionKey } from "@/utils/session-key";
@@ -17,54 +35,55 @@ import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { toSafeSmartAccount } from "permissionless/accounts";
 import { createSmartAccountClient } from "permissionless";
-import { Bounce, toast } from 'react-toastify';
+import { Bounce, toast } from "react-toastify";
 
 export default function Transfer() {
 	const [isMounted, setIsMounted] = useState(false);
 	const [amount, setAmount] = useState<string>("0.01");
-	const [recipientInput, setRecipientInput] = useState("0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1");
+	const [recipientInput, setRecipientInput] = useState(
+		"0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1",
+	);
 	const [isLoading, setIsLoading] = useState(false);
 	const { address } = useAccount();
 	const { signTypedDataAsync } = useSignTypedData({
 		config,
-	})
+	});
 	const { signMessageAsync } = useSignMessage({
 		config,
-	})
+	});
 	const { data: tokenBalance } = useBalance({
 		address,
 	});
-    const chainId = useChainId()
-	console.log('chainId')
-	console.log(chainId)
-	const { data: hash, sendTransaction } = useSendTransaction()
-    const [sessionAccount, setSessionAccount] = useState<PrivateKeyAccount | null>(null);
-    const magicSpend = new MagicSpend(config);
+	const chainId = useChainId();
+
+	const { data: hash, sendTransaction } = useSendTransaction();
+
+	const [sessionAccount, setSessionAccount] =
+		useState<PrivateKeyAccount | null>(null);
+	const magicSpend = new MagicSpend(config);
 
 	useEffect(() => {
-        setIsMounted(true);
-        const fetchSessionKey = async () => {
-            const sessionKey = new SessionKey();
-            const key = await sessionKey.getKey();
-            setSessionAccount(key);
-        }
+		setIsMounted(true);
+		const fetchSessionKey = async () => {
+			const sessionKey = new SessionKey();
+			const key = await sessionKey.getKey();
+			setSessionAccount(key);
+		};
 
-        fetchSessionKey();
-    }, []);
+		fetchSessionKey();
+	}, []);
 
 	const [debouncedRecipient] = useDebounce(
-		recipientInput.replace(/^\.+|\.+$/g, ''),
-		500
+		recipientInput.replace(/^\.+|\.+$/g, ""),
+		500,
 	);
 
 	const { data: ensAddress } = useEnsAddress({
 		name: normalize(debouncedRecipient),
-        chainId: 1,
-	})
+		chainId: 1,
+	});
 
 	const recipientAddress = ensAddress || recipientInput;
-
-	const { writeContract } = useWriteContract();	
 
 	const handleMaxClick = () => {
 		if (tokenBalance) {
@@ -73,52 +92,50 @@ export default function Transfer() {
 	};
 
 	const signMagicSpendAllowance = async (allowance: MagicSpendAllowance) => {
-		console.log('allowance')
-		console.log(allowance)
-
-		console.log('address')
-		console.log(address)
-
 		const sig = await signTypedDataAsync({
 			types: {
 				AssetAllowance: [
-					{ name: 'token', type: 'address' },
-					{ name: 'amount', type: 'uint128' },
-					{ name: 'chainId', type: 'uint128' },
+					{ name: "token", type: "address" },
+					{ name: "amount", type: "uint128" },
+					{ name: "chainId", type: "uint128" },
 				],
 				Allowance: [
-					{ name: 'account', type: 'address' },
-					{ name: 'assets', type: 'AssetAllowance[]' },
-					{ name: 'validUntil', type: 'uint128' },
-					{ name: 'validAfter', type: 'uint128' },
-					{ name: 'salt', type: 'uint128' },
-					{ name: 'operator', type: 'address' },
-				]
+					{ name: "account", type: "address" },
+					{ name: "assets", type: "AssetAllowance[]" },
+					{ name: "validUntil", type: "uint128" },
+					{ name: "validAfter", type: "uint128" },
+					{ name: "salt", type: "uint128" },
+					{ name: "operator", type: "address" },
+				],
 			},
-			primaryType: 'Allowance',
+			primaryType: "Allowance",
 			message: allowance,
-		})
+		});
 
 		return sig;
-	}
+	};
 
 	const handleTransfer = async () => {
 		if (!recipientAddress) return;
 
-        if (!sessionAccount) return;
+		if (!sessionAccount) return;
 
 		if (!address) return;
-
-        console.log(sessionAccount);
 
 		try {
 			setIsLoading(true);
 
-            // - Check user's active allowances
-            const allowances = await magicSpend.getAllowancesByOperator(sessionAccount.address)
+			// - Check user's active allowances
+			const allowances = await magicSpend.getAllowancesByOperator(
+				sessionAccount.address,
+			);
 
-			const totalAllowance = allowances.flatMap(a => a.assets)
-				.reduce((acc: bigint, curr) => acc + curr.amount - curr.used, BigInt(0));
+			const totalAllowance = allowances
+				.flatMap((a) => a.assets)
+				.reduce(
+					(acc: bigint, curr) => acc + curr.amount - curr.used,
+					BigInt(0),
+				);
 
 			// - Check if it's enough to cover the transfer
 			if (totalAllowance < parseEther(amount)) {
@@ -127,40 +144,39 @@ export default function Transfer() {
 					account: address,
 					token: ETH,
 					amount: `0x${(parseEther(amount) * BigInt(3)).toString(16)}`,
-				})
+				});
 
 				const allowanceWithOperator = {
 					...newAllowance,
 					operator: sessionAccount.address,
-				}
-
+				};
 
 				const stakeManager = getContract({
-					address: '0xA38D9e0F911B1bEd03a038367A6e9667700CDEFe',
+					address: "0xA38D9e0F911B1bEd03a038367A6e9667700CDEFe",
 					abi: MagicSpendStakeManagerAbi,
 					client: config.getClient({ chainId: 11155111 }),
-				})
+				});
 
-				const h = await stakeManager.read.getAllowanceHash([{
-					...allowanceWithOperator,
-					validAfter: Number(allowanceWithOperator.validAfter),
-					validUntil: Number(allowanceWithOperator.validUntil),
-					salt: Number(allowanceWithOperator.salt),
-				}])
-
-				console.log('h')
-				console.log(h)
+				const h = await stakeManager.read.getAllowanceHash([
+					{
+						...allowanceWithOperator,
+						validAfter: Number(allowanceWithOperator.validAfter),
+						validUntil: Number(allowanceWithOperator.validUntil),
+						salt: Number(allowanceWithOperator.salt),
+					},
+				]);
 
 				const signature = await signMessageAsync({
 					message: {
 						raw: h,
-					}
-				})
+					},
+				});
 
 				// - Grant the allowance to Pimlico
-				const k = await magicSpend.grantAllowance(allowanceWithOperator, signature)
-				console.log('k')
-				console.log(k)
+				const k = await magicSpend.grantAllowance(
+					allowanceWithOperator,
+					signature,
+				);
 			}
 
 			// - Request the withdrawal
@@ -168,40 +184,38 @@ export default function Transfer() {
 				abi: MagicSpendWithdrawalManagerAbi,
 				address: "0x3F4A20335e9045f71411b04E9F53814f5b8d725d",
 				client: config.getClient({ chainId: 11155111 }),
-			})
-			
-			const withdrawalHash = await withdrawalManagerContract.read.getWithdrawalHash([
-				{
-					token: ETH,
-					amount: parseEther(amount),
-					chainId: BigInt(sepolia.id),
-					recipient: recipientAddress as Address,
-					preCalls: [],
-					postCalls: [],
-					validUntil: Number(0),
-					validAfter: Number(0),
-					salt: 0
-				}
-			]) as Hex;
+			});
 
-			console.log('withdrawalHash')
-			console.log(withdrawalHash)
+			const withdrawalHash =
+				(await withdrawalManagerContract.read.getWithdrawalHash([
+					{
+						token: ETH,
+						amount: parseEther(amount),
+						chainId: BigInt(sepolia.id),
+						recipient: recipientAddress as Address,
+						preCalls: [],
+						postCalls: [],
+						validUntil: Number(0),
+						validAfter: Number(0),
+						salt: 0,
+					},
+				])) as Hex;
 
 			const operatorRequestSignature = await sessionAccount.signMessage({
 				message: {
-					raw: withdrawalHash
-				}
-			})
+					raw: withdrawalHash,
+				},
+			});
 
 			const [withdrawal, signature] = await magicSpend.sponsorWithdrawal({
 				token: ETH,
 				recipient: recipientAddress as Address,
 				amount: `0x${(parseEther(amount)).toString(16)}`,
 				signature: operatorRequestSignature,
-			})
+			});
 
 			// - Create the user operation
-			const publicClient = config.getClient({ chainId: 11155111 })
+			const publicClient = config.getClient({ chainId: 11155111 });
 
 			const paymasterClient = createPimlicoClient({
 				transport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL),
@@ -209,7 +223,7 @@ export default function Transfer() {
 					address: entryPoint07Address,
 					version: "0.7",
 				},
-			})
+			});
 
 			const safeAccount = await toSafeSmartAccount({
 				client: publicClient,
@@ -219,7 +233,7 @@ export default function Transfer() {
 				},
 				owners: [sessionAccount],
 				version: "1.4.1",
-			})
+			});
 
 			const smartAccountClient = createSmartAccountClient({
 				account: safeAccount,
@@ -227,13 +241,14 @@ export default function Transfer() {
 				paymaster: paymasterClient,
 				bundlerTransport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL),
 				userOperation: {
-					estimateFeesPerGas: async () => (await paymasterClient.getUserOperationGasPrice()).fast,
+					estimateFeesPerGas: async () =>
+						(await paymasterClient.getUserOperationGasPrice()).fast,
 				},
-			})
+			});
 
 			const magicSpendCallData = encodeFunctionData({
 				abi: MagicSpendWithdrawalManagerAbi,
-				functionName: 'withdraw',
+				functionName: "withdraw",
 				args: [
 					{
 						...withdrawal,
@@ -242,9 +257,9 @@ export default function Transfer() {
 						salt: Number(withdrawal.salt),
 					},
 					signature,
-				]
-			})
-			
+				],
+			});
+
 			// Send user operation and withdraw funds
 			// You can add subsequent calls after the withdrawal, like "buy NFT on OpenSea for ETH"
 			const userOpHash = await smartAccountClient.sendUserOperation({
@@ -254,20 +269,19 @@ export default function Transfer() {
 						to: "0x3F4A20335e9045f71411b04E9F53814f5b8d725d",
 						value: parseEther("0"),
 						data: magicSpendCallData,
-					}
-				]
-			})
+					},
+				],
+			});
 
 			const receipt = await paymasterClient.waitForUserOperationReceipt({
-				hash: userOpHash
-			})
-			
-			console.log(`Transaction hash: ${receipt.receipt.transactionHash}`);
+				hash: userOpHash,
+			});
+
 			toast(
 				<div>
 					🦄 Transaction successful!
 					<br />
-					<a 
+					<a
 						href={`https://sepolia.etherscan.io/tx/${receipt.receipt.transactionHash}`}
 						target="_blank"
 						rel="noopener noreferrer"
@@ -286,12 +300,12 @@ export default function Transfer() {
 					progress: undefined,
 					theme: "light",
 					transition: Bounce,
-				}
+				},
 			);
 		} catch (error) {
 			console.error("Error transferring");
 			console.error(error);
-			toast.error('Transaction failed! Please try again.', {
+			toast.error("Transaction failed! Please try again.", {
 				position: "top-right",
 				autoClose: 5000,
 				hideProgressBar: false,
@@ -310,7 +324,9 @@ export default function Transfer() {
 				<h1 className="text-2xl font-bold mb-6">Transfer ETH</h1>
 
 				<div className="mb-4">
-					<label className="block text-sm font-medium mb-2">Recipient Address or ENS</label>
+					<label className="block text-sm font-medium mb-2">
+						Recipient Address or ENS
+					</label>
 					<input
 						type="text"
 						value={recipientInput}
@@ -318,7 +334,7 @@ export default function Transfer() {
 						placeholder="0x... or name.eth"
 						className="w-full p-2 border rounded"
 					/>
-					{recipientInput.endsWith('.eth') && ensAddress && (
+					{recipientInput.endsWith(".eth") && ensAddress && (
 						<p className="mt-1 text-sm text-gray-600">
 							Resolved address: {ensAddress}
 						</p>
@@ -346,7 +362,7 @@ export default function Transfer() {
 
 				<button
 					onClick={handleTransfer}
-					// disabled={isLoading || amount === "0" || !isAddress(recipientAddress) || !sessionAccount !== null}
+					disabled={isLoading || parseEther(amount) === BigInt(0) || !isAddress(recipientAddress) || sessionAccount === null}
 					className="w-full py-2 bg-purple-500 text-white rounded disabled:opacity-50"
 				>
 					{isLoading ? "Transferring..." : "Transfer"}

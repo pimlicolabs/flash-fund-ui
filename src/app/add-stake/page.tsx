@@ -6,7 +6,7 @@ import { clipDecimals, ETH } from "@/utils";
 import { MagicSpend } from "@/utils/magic-spend";
 import config from "@/utils/wagmi-config";
 import { useEffect, useState } from "react";
-import { Chain, createPublicClient, formatEther, http, parseEther } from "viem";
+import { Chain, formatEther, parseEther } from "viem";
 import { useAccount, useBalance, useChainId, useSwitchChain } from "wagmi";
 import { useWriteContract } from "wagmi";
 
@@ -22,8 +22,8 @@ export default function AddStake() {
 		address,
 	});
 
-    const { chains, switchChain } = useSwitchChain()
-    const chainId = useChainId()
+	const { switchChain } = useSwitchChain();
+	const chainId = useChainId();
 
 	const magicSpend = new MagicSpend(config);
 
@@ -32,8 +32,8 @@ export default function AddStake() {
 	});
 
 	useEffect(() => {
-        setIsMounted(true);
-    }, []);
+		setIsMounted(true);
+	}, []);
 
 	const write = async () =>
 		writeContract({
@@ -51,13 +51,13 @@ export default function AddStake() {
 	};
 
 	const handleStake = async () => {
-        try {
-		  setIsLoading(true)
-		  await write()
+		try {
+			setIsLoading(true);
+			await write();
 		} catch (error) {
-		  console.error('Error staking:', error)
+			console.error("Error staking:", error);
 		} finally {
-		  setIsLoading(false)
+			setIsLoading(false);
 		}
 	};
 
@@ -72,7 +72,6 @@ export default function AddStake() {
 
 			try {
 				const balances = await magicSpend.getBalances(address);
-
 				setChainTokenBalances(balances);
 			} catch (error) {
 				console.error("Error loading balances:", error);
@@ -100,26 +99,36 @@ export default function AddStake() {
 	return (
 		<div className="flex gap-8 p-4 max-w-7xl mx-auto">
 			<div className="flex-1">
-				<div className="mb-6">
-					<h2 className="text-xl font-bold mb-2">Total Unstaked Balance</h2>
-					<BalanceCard balance={{ chain: "Total", token: "ETH", balance: totalBalance }} />
-				</div>
-
-				<h2 className="text-xl font-bold mb-4">Available Unstaked Balances</h2>
-				<div className="grid grid-cols-3 gap-4">
-					{chainTokenBalances.map((item, index) => (
-						<div
-							key={index}
-							className="p-4 border rounded-lg hover:shadow-lg transition-shadow cursor-pointer"
-							onClick={() => handleBalanceClick(item.chain, item.balance)}
-						>
-							<div className="font-medium text-gray-600">{item.chain}</div>
-							<div className="text-lg font-bold">
-								{clipDecimals(formatEther(item.balance))} {item.token}
-							</div>
+				{isLoadingBalances ? (
+					<div className="flex items-center justify-center h-full">
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+					</div>
+				) : (
+					<>
+						<div className="mb-6">
+							<h2 className="text-xl font-bold mb-2">Total Unstaked Balance</h2>
+							<BalanceCard
+								balance={{ chain: "Total", token: "ETH", balance: totalBalance }}
+							/>
 						</div>
-					))}
-				</div>
+
+						<h2 className="text-xl font-bold mb-4">Available Unstaked Balances</h2>
+						<div className="grid grid-cols-3 gap-4">
+							{chainTokenBalances.map((item, index) => (
+								<div
+									key={index}
+									className="p-4 border rounded-lg hover:shadow-lg transition-shadow cursor-pointer"
+									onClick={() => handleBalanceClick(item.chain, item.balance)}
+								>
+									<div className="font-medium text-gray-600">{item.chain}</div>
+									<div className="text-lg font-bold">
+										{clipDecimals(formatEther(item.balance))} {item.token}
+									</div>
+								</div>
+							))}
+						</div>
+					</>
+				)}
 			</div>
 
 			<div className="flex-1 max-w-lg">
@@ -159,7 +168,7 @@ export default function AddStake() {
 							type="number"
 							value={amount}
 							onChange={(e) => {
-								setAmount(e.target.value)
+								setAmount(e.target.value);
 							}}
 							placeholder="0.0"
 							className="flex-1 p-2 border rounded"
@@ -174,23 +183,23 @@ export default function AddStake() {
 				</div>
 
 				{isMounted && chainId === selectedChain.id ? (
-                    <>
-                        <button
-                            onClick={handleStake}
-                            disabled={!write || isLoading || amount === "0"}
-                            className="w-full py-2 bg-purple-500 text-white rounded disabled:opacity-50"
-                        >
-                            {isLoading ? "Staking..." : "Stake"}
-                        </button>
+					<>
+						<button
+							onClick={handleStake}
+							disabled={!write || isLoading || amount === "0"}
+							className="w-full py-2 bg-purple-500 text-white rounded disabled:opacity-50"
+						>
+							{isLoading ? "Staking..." : "Stake"}
+						</button>
 
-                        {parseFloat(amount) >= 0.1 && (
-                            <div className="p-4 mt-2 bg-yellow-100 rounded-lg">
-                                <span className="text-m font-bold text-yellow-700">
-                                    You are about to stake more than 0.1 ETH, be careful!
-                                </span>
-                            </div>
-                        )}
-                    </>
+						{parseFloat(amount) >= 0.1 && (
+							<div className="p-4 mt-2 bg-yellow-100 rounded-lg">
+								<span className="text-m font-bold text-yellow-700">
+									You are about to stake more than 0.1 ETH, be careful!
+								</span>
+							</div>
+						)}
+					</>
 				) : (
 					<button
 						onClick={() => switchChain({ chainId: selectedChain.id })}
