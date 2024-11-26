@@ -62,7 +62,7 @@ export default function AddStake() {
 	};
 
 	const [chainTokenBalances, setChainTokenBalances] = useState<
-		Array<{ chain: string; token: string; balance: bigint }>
+		Array<{ chain: Chain; balance: bigint }>
 	>([]);
 	const [isLoadingBalances, setIsLoadingBalances] = useState(true);
 
@@ -96,6 +96,9 @@ export default function AddStake() {
 		}
 	};
 
+	const maxBalance = chainTokenBalances.find((item) => item.chain.id === selectedChain.id)?.balance;
+	const maxBalanceExceeds = parseFloat(amount) > parseFloat(formatEther(maxBalance ?? BigInt(0)));
+
 	return (
 		<div className="flex gap-8 p-4 max-w-7xl mx-auto">
 			<div className="flex-1">
@@ -108,7 +111,10 @@ export default function AddStake() {
 						<div className="mb-6">
 							<h2 className="text-xl font-bold mb-2">Total Unstaked Balance</h2>
 							<BalanceCard
-								balance={{ chain: "Total", token: "ETH", balance: totalBalance }}
+								balance={{
+									chain: config.chains[0],
+									balance: totalBalance,
+								}}
 							/>
 						</div>
 
@@ -118,11 +124,11 @@ export default function AddStake() {
 								<div
 									key={index}
 									className="p-4 border rounded-lg hover:shadow-lg transition-shadow cursor-pointer"
-									onClick={() => handleBalanceClick(item.chain, item.balance)}
+									onClick={() => handleBalanceClick(item.chain.name, item.balance)}
 								>
-									<div className="font-medium text-gray-600">{item.chain}</div>
+									<div className="font-medium text-gray-600">{item.chain.name}</div>
 									<div className="text-lg font-bold">
-										{clipDecimals(formatEther(item.balance))} {item.token}
+										{clipDecimals(formatEther(item.balance))} {item.chain.nativeCurrency.symbol}
 									</div>
 								</div>
 							))}
@@ -186,16 +192,24 @@ export default function AddStake() {
 					<>
 						<button
 							onClick={handleStake}
-							disabled={!write || isLoading || amount === "0"}
+							disabled={!write || isLoading || amount === "0" || parseFloat(amount) > parseFloat(formatEther(maxBalance ?? BigInt(0)))}
 							className="w-full py-2 bg-purple-500 text-white rounded disabled:opacity-50"
 						>
 							{isLoading ? "Staking..." : "Stake"}
 						</button>
 
-						{parseFloat(amount) >= 0.1 && (
+						{parseFloat(amount) >= 0.1 && !maxBalanceExceeds && (
 							<div className="p-4 mt-2 bg-yellow-100 rounded-lg">
 								<span className="text-m font-bold text-yellow-700">
 									You are about to stake more than 0.1 ETH, be careful!
+								</span>
+							</div>
+						)}
+
+						{maxBalanceExceeds && (
+							<div className="p-4 mt-2 bg-red-100 rounded-lg">
+								<span className="text-m font-bold text-red-700">
+									You don't have enough balance to stake this amount!
 								</span>
 							</div>
 						)}
@@ -203,6 +217,7 @@ export default function AddStake() {
 				) : (
 					<button
 						onClick={() => switchChain({ chainId: selectedChain.id })}
+						disabled={isLoading}
 						className="w-full py-2 bg-purple-500 text-white rounded"
 					>
 						Switch to {selectedChain.name}

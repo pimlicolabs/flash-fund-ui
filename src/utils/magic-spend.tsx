@@ -123,8 +123,7 @@ export type PimlicoMagicSpendPrepareAllowanceParams = {
 };
 
 export type MagicSpendBalance = {
-	chain: string;
-	token: string;
+	chain: Chain;
 	balance: bigint;
 };
 
@@ -174,8 +173,7 @@ export class MagicSpend {
 				});
 
 				return {
-					chain: chain.name,
-					token: chain.nativeCurrency.symbol,
+					chain,
 					balance,
 				};
 			}),
