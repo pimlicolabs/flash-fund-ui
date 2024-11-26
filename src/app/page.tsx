@@ -69,7 +69,7 @@ export default function Home() {
 					network, giving you seamless cross-chain liquidity.
 				</p>
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<BalanceCard balance={{ token: "ETH", balance }} primary={true} />
+					<BalanceCard balance={{ balance }} primary={true} />
 				</div>
 			</div>
 
@@ -92,8 +92,7 @@ export default function Home() {
 						<BalanceCard
 							key={stake.chainId}
 							balance={{
-								chain: getChain(stake.chainId).name,
-								token: "ETH",
+								chain: getChain(stake.chainId),
 								balance: stake.amount,
 							}}
 						/>
