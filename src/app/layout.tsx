@@ -1,25 +1,12 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
 import NavBar from "@/components/navbar";
-import RainbowProvider from "@/utils/rainbow-provider";
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
-const geistSans = localFont({
-	src: "./fonts/GeistVF.woff",
-	variable: "--font-geist-sans",
-	weight: "100 900",
-});
-const geistMono = localFont({
-	src: "./fonts/GeistMonoVF.woff",
-	variable: "--font-geist-mono",
-	weight: "100 900",
-});
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export const metadata: Metadata = {
-	title: "Pimlico MagicSpend++",
-	description: "Allowing your users to instantly use their balances on any chain. In Beta.",
+	title: "Magic Spend",
+	description: "Magic Spend by Pimlico",
 };
 
 export default function RootLayout({
@@ -29,13 +16,9 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-			>
-				<RainbowProvider>
-					<NavBar />
-					{children}
-				</RainbowProvider>
+			<body>
+				<NavBar />
+				{children}
 				<ToastContainer />
 			</body>
 		</html>

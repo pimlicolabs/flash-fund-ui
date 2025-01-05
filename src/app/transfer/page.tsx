@@ -1,262 +1,141 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import {
-	useAccount,
-	useBalance,
-	useChainId,
-	useEnsName,
-	useSendTransaction,
-	useSignMessage,
-	useSignTypedData,
-} from "wagmi";
-import { useWriteContract, useEnsAddress } from "wagmi";
-import {
-	parseEther,
-	formatEther,
-	isAddress,
-	PrivateKeyAccount,
-	getContract,
-	Address,
-	Hex,
-	http,
-	encodeFunctionData,
-} from "viem";
-import { clipDecimals, ETH } from "@/utils";
-import { normalize } from "viem/ens";
-import { useDebounce } from "use-debounce";
-import { MagicSpend, MagicSpendAllowance } from "@/utils/magic-spend";
-import config from "@/utils/wagmi-config";
-import { SessionKey } from "@/utils/session-key";
-import { MagicSpendStakeManagerAbi } from "@/abi/MagicSpendStakeManager";
-import { MagicSpendWithdrawalManagerAbi } from "@/abi/MagicSpendWithdrawalManager";
-import { sepolia, Chain, arbitrumSepolia, baseSepolia } from "viem/chains";
+import { useEffect, useState } from "react";
+import { Address, getAddress, isAddress, parseEther, toHex, encodeFunctionData, createPublicClient, http, PrivateKeyAccount } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { pimlicoStorage } from "@/utils/storage";
+import { Bounce, toast } from "react-toastify";
+import Link from "next/link";
+import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { toSafeSmartAccount } from "permissionless/accounts";
 import { createSmartAccountClient } from "permissionless";
-import { Bounce, toast } from "react-toastify";
+import { MagicSpendWithdrawalManagerAbi } from "@/abi/MagicSpendWithdrawalManager";
+
+const ETH_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+// This is a dummy private key for testing - DO NOT use in production
+const DUMMY_KEY = "0x1234567890123456789012345678901234567890123456789012345678901234";
 
 export default function Transfer() {
-	const [isMounted, setIsMounted] = useState(false);
-	const [amount, setAmount] = useState<string>("0.01");
-	const [recipientInput, setRecipientInput] = useState(
-		"0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
-	);
+	const [apiKey, setApiKey] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
-	const [transferState, setTransferState] = useState("");
+	const [transferStatus, setTransferStatus] = useState<string>("");
+	const [amount] = useState<string>("0.0000000123");
+	const [recipientInput, setRecipientInput] = useState<Address>("0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1");
 	const [selectedChain, setSelectedChain] = useState<typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia>(sepolia);
-	const { address } = useAccount();
-	const { signTypedDataAsync } = useSignTypedData({
-		config,
-	});
-	const { signMessageAsync } = useSignMessage({
-		config,
-	});
-	const { data: tokenBalance } = useBalance({
-		address,
-		chainId: selectedChain.id
-	});
-	const chainId = useChainId();
-
-	const { data: hash, sendTransaction } = useSendTransaction();
-
-	const [sessionAccount, setSessionAccount] =
-		useState<PrivateKeyAccount | null>(null);
-	const magicSpend = new MagicSpend(config);
+	const chains = [sepolia, baseSepolia, arbitrumSepolia];
 
 	useEffect(() => {
-		setIsMounted(true);
-		const fetchSessionKey = async () => {
-			const sessionKey = new SessionKey();
-			const key = await sessionKey.getKey();
-			setSessionAccount(key);
+		const loadApiKey = async () => {
+			const key = await pimlicoStorage.getApiKey();
+			setApiKey(key);
 		};
-
-		fetchSessionKey();
+		loadApiKey();
 	}, []);
 
-	useEffect(() => {
-		magicSpend.setChainId(selectedChain.id);
-	}, [selectedChain]);
-
-	const [debouncedRecipient] = useDebounce(
-		recipientInput.replace(/^\.+|\.+$/g, ""),
-		500,
-	);
-
-	const { data: ensAddress } = useEnsAddress({
-		name: normalize(debouncedRecipient),
-		chainId: 1,
-	});
-
-	const recipientAddress = ensAddress || recipientInput;
-
-	const handleMaxClick = () => {
-		if (tokenBalance) {
-			setAmount(clipDecimals(formatEther(tokenBalance.value)));
-		}
-	};
-
-	const signMagicSpendAllowance = async (allowance: MagicSpendAllowance) => {
-		const sig = await signTypedDataAsync({
-			types: {
-				AssetAllowance: [
-					{ name: "token", type: "address" },
-					{ name: "amount", type: "uint128" },
-					{ name: "chainId", type: "uint128" },
-				],
-				Allowance: [
-					{ name: "account", type: "address" },
-					{ name: "assets", type: "AssetAllowance[]" },
-					{ name: "validUntil", type: "uint128" },
-					{ name: "validAfter", type: "uint128" },
-					{ name: "salt", type: "uint128" },
-					{ name: "operator", type: "address" },
-				],
-			},
-			primaryType: "Allowance",
-			message: allowance,
-		});
-
-		return sig;
-	};
+	if (!apiKey) {
+		return (
+			<div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+				<h1 className="text-2xl font-bold mb-4">API Key Required</h1>
+				<p className="text-gray-600 mb-4 text-center max-w-md">
+					Please set up your Pimlico API key before making transfers.
+				</p>
+				<Link
+					href="/"
+					className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+				>
+					Set up API Key
+				</Link>
+			</div>
+		);
+	}
 
 	const handleTransfer = async () => {
-		if (!recipientAddress) return;
-		if (!sessionAccount) return;
-		if (!address) return;
-
-		magicSpend.setChainId(selectedChain.id);
-
 		try {
 			setIsLoading(true);
-			setTransferState("Checking existing allowances...");
+			setTransferStatus("Preparing transfer...");
 
-			// - Check user's active allowances
-			const allowances = await magicSpend.getAllowancesByOperator(
-				sessionAccount.address,
-			);
-
-			const totalAllowance = allowances
-				.flatMap((a) => a.assets)
-				.reduce(
-					(acc: bigint, curr) => acc + curr.amount - curr.used,
-					BigInt(0),
-				);
-
-			// - Check if it's enough to cover the transfer
-			if (totalAllowance < parseEther(amount)) {
-				setTransferState("Creating new allowance...");
-				// -- If not, create a new allowance
-				const newAllowance = await magicSpend.prepareAllowance({
-					account: address,
-					token: ETH,
-					amount: `0x${(parseEther(amount) * BigInt(3)).toString(16)}`,
-				});
-
-				const allowanceWithOperator = {
-					...newAllowance,
-					operator: sessionAccount.address,
-				};
-
-				const stakeManager = getContract({
-					address: "0xA38D9e0F911B1bEd03a038367A6e9667700CDEFe",
-					abi: MagicSpendStakeManagerAbi,
-					client: config.getClient({ chainId: selectedChain.id }),
-				});
-
-				const h = await stakeManager.read.getAllowanceHash([
-					{
-						...allowanceWithOperator,
-						validAfter: Number(allowanceWithOperator.validAfter),
-						validUntil: Number(allowanceWithOperator.validUntil),
-						salt: Number(allowanceWithOperator.salt),
-					},
-				]);
-
-				const signature = await signMessageAsync({
-					message: {
-						raw: h,
-					},
-				});
-
-				// - Grant the allowance to Pimlico
-				const k = await magicSpend.grantAllowance(
-					allowanceWithOperator,
-					signature,
-				);
+			const params = {
+				recipient: recipientInput,
+				token: ETH_ADDRESS,
+				amount: toHex(parseEther(amount)),
+				salt: "0x0",
+				signature: "0x0",
 			}
 
-			setTransferState("Preparing withdrawal...");
-			// - Request the withdrawal
-			const withdrawalManagerContract = getContract({
-				abi: MagicSpendWithdrawalManagerAbi,
-				address: "0x3F4A20335e9045f71411b04E9F53814f5b8d725d",
-				client: config.getClient({ chainId: selectedChain.id }),
-			});
+			console.log("Request params:", params);
 
-			const withdrawalHash =
-				(await withdrawalManagerContract.read.getWithdrawalHash([
-					{
-						token: ETH,
-						amount: parseEther(amount),
-						chainId: BigInt(selectedChain.id),
-						recipient: recipientAddress as Address,
-						preCalls: [],
-						postCalls: [],
-						validUntil: Number(0),
-						validAfter: Number(0),
-						salt: 0,
+			setTransferStatus("Requesting withdrawal data...");
+			const response = await fetch(`https://api.pimlico.io/v2/${selectedChain.id}/rpc?apikey=${apiKey}`, {
+				method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
 					},
-				])) as Hex;
-
-			const operatorRequestSignature = await sessionAccount.signMessage({
-				message: {
-					raw: withdrawalHash,
-				},
+					body: JSON.stringify({
+						jsonrpc: "2.0",
+						method: "pimlico_sponsorMagicSpendWithdrawal",
+						params: [params, null],
+						id: 1
+					}),
 			});
 
-			setTransferState("Creating user operation...");
-			const [withdrawal, signature] = await magicSpend.sponsorWithdrawal({
-				token: ETH,
-				recipient: recipientAddress as Address,
-				amount: `0x${(parseEther(amount)).toString(16)}`,
-				signature: operatorRequestSignature,
-			});
+			const data = await response.json();
+			console.log("API Response:", data);
 
-			// - Create the user operation
-			const publicClient = config.getClient({ chainId: selectedChain.id });
+			if (data.error) {
+				throw new Error(data.error.message || 'Transfer failed');
+			}
+
+			// Extract withdrawal data and signature from response
+			const [withdrawal, signature] = data.result;
+			console.log("Withdrawal:", withdrawal);
+			console.log("Signature:", signature);
+
+			setTransferStatus("Setting up clients...");
+			// Create clients
+			const publicClient = createPublicClient({
+				chain: selectedChain,
+				transport: http(),
+			});
 
 			const paymasterClient = createPimlicoClient({
-				transport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL?.replace("CHAIN_ID", selectedChain.id.toString())),
+				transport: http(`https://api.pimlico.io/v2/${selectedChain.id}/rpc?apikey=${apiKey}`),
 				entryPoint: {
 					address: entryPoint07Address,
 					version: "0.7",
 				},
 			});
 
+			// Create dummy account
+			const dummyAccount = privateKeyToAccount(DUMMY_KEY);
+
+			setTransferStatus("Creating smart account...");
+			// Create safe account
 			const safeAccount = await toSafeSmartAccount({
 				client: publicClient,
 				entryPoint: {
 					address: entryPoint07Address,
 					version: "0.7",
 				},
-				owners: [sessionAccount],
+				owners: [dummyAccount],
 				version: "1.4.1",
 			});
 
+			// Create smart account client
 			const smartAccountClient = createSmartAccountClient({
 				account: safeAccount,
 				chain: selectedChain,
 				paymaster: paymasterClient,
-				bundlerTransport: http(process.env.NEXT_PUBLIC_PIMLICO_API_URL?.replace("CHAIN_ID", selectedChain.id.toString())),
+				bundlerTransport: http(`https://api.pimlico.io/v2/${selectedChain.id}/rpc?apikey=${apiKey}`),
 				userOperation: {
 					estimateFeesPerGas: async () =>
 						(await paymasterClient.getUserOperationGasPrice()).fast,
 				},
 			});
 
+			setTransferStatus("Preparing withdrawal...");
+			// Encode withdrawal call
 			const magicSpendCallData = encodeFunctionData({
 				abi: MagicSpendWithdrawalManagerAbi,
 				functionName: "withdraw",
@@ -271,29 +150,29 @@ export default function Transfer() {
 				],
 			});
 
-			setTransferState("Sending user operation...");
-			// Send user operation and withdraw funds
-			// You can add subsequent calls after the withdrawal, like "buy NFT on OpenSea for ETH"
+			setTransferStatus("Sending user operation...");
 			const userOpHash = await smartAccountClient.sendUserOperation({
 				account: safeAccount,
 				calls: [
 					{
-						to: "0x3F4A20335e9045f71411b04E9F53814f5b8d725d",
+						to: "0x0526f93A854c6f5cfEb9fBbFC70d32Fc4F46F182",
 						value: parseEther("0"),
 						data: magicSpendCallData,
 					},
 				],
 			});
 
-			setTransferState("Waiting for transaction confirmation...");
+			setTransferStatus("Waiting for confirmation...");
 			const receipt = await paymasterClient.waitForUserOperationReceipt({
 				hash: userOpHash,
 			});
 
-			setTransferState("Transaction confirmed!");
-			toast(
+			console.log("Transaction confirmed:", receipt);
+			setTransferStatus("Transfer confirmed!");
+
+			toast.success(
 				<div>
-					🦄 Transaction successful!
+					🦄 Transfer successful!
 					<br />
 					<a
 						href={`${selectedChain.blockExplorers?.default.url}/tx/${receipt.receipt.transactionHash}`}
@@ -301,7 +180,7 @@ export default function Transfer() {
 						rel="noopener noreferrer"
 						className="text-purple-500 hover:text-purple-700"
 					>
-						View on Etherscan
+						View on Explorer
 					</a>
 				</div>,
 				{
@@ -314,30 +193,38 @@ export default function Transfer() {
 					progress: undefined,
 					theme: "light",
 					transition: Bounce,
-				},
+				}
 			);
+
 		} catch (error) {
-			console.error("Error transferring");
-			console.error(error);
-			setTransferState("Transaction failed!");
-			toast.error("Transaction failed! Please try again.", {
-				position: "top-right",
+			console.error("Transfer error:", error);
+			setTransferStatus("Transfer failed");
+			toast.error(error instanceof Error ? error.message : "Transfer failed", {
+				position: "bottom-right",
 				autoClose: 5000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
 			});
 		} finally {
 			setIsLoading(false);
-			setTimeout(() => setTransferState(""), 3000);
+			setTimeout(() => setTransferStatus(""), 3000);
 		}
 	};
 
 	return (
 		<div className="flex justify-center p-4">
 			<div className="max-w-lg w-full">
-				<h1 className="text-2xl font-bold mb-6">Transfer ETH</h1>
+				<h1 className="text-2xl font-bold mb-4">Send a Transfer</h1>
+				<p className="text-gray-600 mb-6">
+					This is a demo of Magic Spend transfer functionality. For security reasons, it's limited to testnet chains and small amounts.
+					To explore the full potential of Magic Spend or integrate it into your application, please{' '}
+					<Link href="https://docs.pimlico.io/infra/magic-spend" target="_blank" className="text-purple-600 hover:text-purple-800">
+						read the documentation
+					</Link>
+					{' '}or{' '}
+					<Link href="https://cal.com/sergey-potekhin" target="_blank" className="text-purple-600 hover:text-purple-800">
+						schedule a call
+					</Link>
+					.
+				</p>
 
 				<div className="mb-4">
 					<label className="block text-sm font-medium mb-2">
@@ -346,12 +233,12 @@ export default function Transfer() {
 					<select
 						value={selectedChain.id}
 						onChange={(e) => {
-							const chain = config.chains.find(c => c.id === Number(e.target.value));
+							const chain = chains.find(c => c.id === Number(e.target.value));
 							if (chain) setSelectedChain(chain);
 						}}
 						className="w-full p-2 border rounded"
 					>
-						{config.chains.map((chain) => (
+						{chains.map((chain) => (
 							<option key={chain.id} value={chain.id}>
 								{chain.name}
 							</option>
@@ -361,61 +248,36 @@ export default function Transfer() {
 
 				<div className="mb-4">
 					<label className="block text-sm font-medium mb-2">
-						Recipient Address or ENS
+						Recipient Address
 					</label>
 					<input
 						type="text"
 						value={recipientInput}
-						onChange={(e) => setRecipientInput(e.target.value)}
-						placeholder="0x... or name.eth"
+						onChange={(e) => setRecipientInput(getAddress(e.target.value))}
+						placeholder="0x..."
 						className="w-full p-2 border rounded"
 					/>
-					{recipientInput.endsWith(".eth") && ensAddress && (
-						<p className="mt-1 text-sm text-gray-600">
-							Resolved address: {ensAddress}
-						</p>
-					)}
 				</div>
 
 				<div className="mb-6">
-					<label className="block text-sm font-medium mb-2">Amount</label>
-					<div className="flex gap-2">
-						<input
-							type="number"
-							value={amount}
-							onChange={(e) => setAmount(e.target.value)}
-							placeholder="0.0"
-							className="flex-1 p-2 border rounded"
-						/>
-						<button
-							onClick={handleMaxClick}
-							className="px-3 py-2 bg-gray-200 rounded"
-						>
-							Max
-						</button>
-					</div>
+					<label className="block text-sm font-medium mb-2">Amount (fixed for demo)</label>
+					<input
+						type="text"
+						value={amount}
+						disabled
+						className="w-full p-2 border rounded bg-gray-50"
+					/>
 				</div>
 
 				<button
 					onClick={handleTransfer}
-					disabled={isLoading || parseEther(amount) === BigInt(0) || !isAddress(recipientAddress) || sessionAccount === null}
+					disabled={isLoading || !isAddress(recipientInput)}
 					className="w-full py-2 bg-purple-500 text-white rounded disabled:opacity-50 relative overflow-hidden"
 				>
-					<span className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isLoading ? 'opacity-100' : 'opacity-0'}`}>
-						<span className="animate-pulse">{transferState}</span>
-					</span>
-					<span className={`transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
-						Transfer
+					<span className={`transition-opacity duration-300`}>
+						{transferStatus || (isLoading ? 'Processing...' : 'Send Transfer')}
 					</span>
 				</button>
-
-				{parseFloat(amount) >= 0.1 && (
-					<div className="p-4 mt-2 bg-yellow-100 rounded-lg">
-						<span className="text-m font-bold text-yellow-700">
-							You are about to transfer more than 0.1 ETH, be careful!
-						</span>
-					</div>
-				)}
 			</div>
 		</div>
 	);

@@ -1,7 +1,7 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const NavBar = () => {
 	return (
@@ -17,19 +17,15 @@ const NavBar = () => {
 					/>
 				</Link>
 
-				<Link href="/add-stake" className="hover:text-primary">
-					Add Stake
-				</Link>
 				<Link href="/transfer" className="hover:text-primary">
 					Transfer
 				</Link>
 				<Link href="https://docs.pimlico.io/infra/magic-spend" target="_blank" className="hover:text-primary">
 					Docs
 				</Link>
-			</div>
-			<div className="my-auto flex"></div>
-			<div>
-				<ConnectButton chainStatus="none" showBalance={false} label="Connect" />
+				<Link href="https://cal.com/sergey-potekhin" target="_blank" className="hover:text-primary">
+					Schedule a call
+				</Link>
 			</div>
 		</div>
 	);
