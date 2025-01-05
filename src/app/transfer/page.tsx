@@ -17,6 +17,10 @@ const ETH_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 // This is a dummy private key for testing - DO NOT use in production
 const DUMMY_KEY = "0x1234567890123456789012345678901234567890123456789012345678901234";
 
+if (!process.env.NEXT_PUBLIC_PIMLICO_API_URL) {
+	throw new Error("NEXT_PUBLIC_PIMLICO_API_URL is not set");
+}
+
 export default function Transfer() {
 	const [apiKey, setApiKey] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +29,11 @@ export default function Transfer() {
 	const [recipientInput, setRecipientInput] = useState<Address>("0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1");
 	const [selectedChain, setSelectedChain] = useState<typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia>(sepolia);
 	const chains = [sepolia, baseSepolia, arbitrumSepolia];
+
+	const getPimlicoUrl = (chainId: number) => {
+		if (!apiKey) throw new Error("API key is required");
+		return `${process.env.NEXT_PUBLIC_PIMLICO_API_URL}v2/${chainId}/rpc?apikey=${apiKey}`;
+	};
 
 	useEffect(() => {
 		const loadApiKey = async () => {
@@ -67,17 +76,17 @@ export default function Transfer() {
 			console.log("Request params:", params);
 
 			setTransferStatus("Requesting withdrawal data...");
-			const response = await fetch(`https://api.pimlico.io/v2/${selectedChain.id}/rpc?apikey=${apiKey}`, {
+			const response = await fetch(getPimlicoUrl(selectedChain.id), {
 				method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						jsonrpc: "2.0",
-						method: "pimlico_sponsorMagicSpendWithdrawal",
-						params: [params, null],
-						id: 1
-					}),
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					jsonrpc: "2.0",
+					method: "pimlico_sponsorMagicSpendWithdrawal",
+					params: [params, null],
+					id: 1
+				}),
 			});
 
 			const data = await response.json();
@@ -100,7 +109,7 @@ export default function Transfer() {
 			});
 
 			const paymasterClient = createPimlicoClient({
-				transport: http(`https://api.pimlico.io/v2/${selectedChain.id}/rpc?apikey=${apiKey}`),
+				transport: http(getPimlicoUrl(selectedChain.id)),
 				entryPoint: {
 					address: entryPoint07Address,
 					version: "0.7",
@@ -127,7 +136,7 @@ export default function Transfer() {
 				account: safeAccount,
 				chain: selectedChain,
 				paymaster: paymasterClient,
-				bundlerTransport: http(`https://api.pimlico.io/v2/${selectedChain.id}/rpc?apikey=${apiKey}`),
+				bundlerTransport: http(getPimlicoUrl(selectedChain.id)),
 				userOperation: {
 					estimateFeesPerGas: async () =>
 						(await paymasterClient.getUserOperationGasPrice()).fast,
