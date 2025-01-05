@@ -1,102 +1,115 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount, useBalance } from "wagmi";
 import Link from "next/link";
-import { formatEther } from "viem";
-import { clipDecimals, getChain } from "@/utils";
-import {
-	MagicSpend,
-	MagicSpendBalance,
-	PimlicoMagicSpendStake,
-} from "@/utils/magic-spend";
-import config from "@/utils/wagmi-config";
-import BalanceCard from "@/components/balance-card";
+import { useRouter } from "next/navigation";
+import { pimlicoStorage } from "@/utils/storage";
+import { toast } from "react-toastify";
 
 export default function Home() {
-	const [isMounted, setIsMounted] = useState(false);
-	const { address } = useAccount();
-	const magicSpend = new MagicSpend(config);
-	const [stakes, setStakes] = useState<PimlicoMagicSpendStake[]>([]);
-	const [isLoadingStakes, setIsLoadingStakes] = useState(true);
+	const [apiKey, setApiKey] = useState<string>("");
+	const [isSaved, setIsSaved] = useState(false);
+	const [isFirstSave, setIsFirstSave] = useState(true);
+	const router = useRouter();
 
 	useEffect(() => {
-		setIsMounted(true);
-	}, []);
-
-	useEffect(() => {
-		if (!address) return;
-
-		const loadStakes = async () => {
-			try {
-				const stakesData = await magicSpend.getStakes(address);
-				setStakes(stakesData);
-			} catch (error) {
-				console.error("Error loading stakes:", error);
-			} finally {
-				setIsLoadingStakes(false);
+		const loadApiKey = async () => {
+			const savedKey = await pimlicoStorage.getApiKey();
+			if (savedKey) {
+				setApiKey(savedKey);
+				setIsSaved(true);
+				setIsFirstSave(false);
 			}
 		};
+		loadApiKey();
+	}, []);
 
-		loadStakes();
-	}, [address]);
+	const handleSave = async () => {
+		await pimlicoStorage.setApiKey(apiKey);
+		setIsSaved(true);
+		toast.success("API key saved successfully!", {
+			position: "bottom-right",
+			autoClose: 3000,
+		});
 
-	const balance = stakes.reduce((acc, curr) => acc + curr.amount, BigInt(0));
+		if (isFirstSave) {
+			setIsFirstSave(false);
+			router.push("/transfer");
+		}
+	};
 
-	if (isLoadingStakes) {
-		return (
-			<div className="flex items-center justify-center h-screen">
-				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-			</div>
-		);
-	}
+	const handleRemove = async () => {
+		await pimlicoStorage.removeApiKey();
+		setApiKey("");
+		setIsSaved(false);
+		setIsFirstSave(true);
+		toast.info("API key removed", {
+			position: "bottom-right",
+			autoClose: 3000,
+		});
+	};
 
 	return (
-		<div className="p-8 max-w-7xl mx-auto">
+		<div className="p-8 max-w-3xl mx-auto">
 			<div className="mb-8">
-				<div className="flex items-center gap-4 mb-4">
-					<h2 className="text-2xl font-bold">Your Balance</h2>
-					<Link
-						href="/transfer"
-						className="text-purple-600 hover:text-purple-800"
-					>
-						Transfer Tokens
-					</Link>
-				</div>
-				<p className="text-gray-600 mb-4">
-					This is your total Magic Spend token balance, available across all
-					connected chains. These tokens can be used instantly on any supported
-					network, giving you seamless cross-chain liquidity.
+				<h2 className="text-2xl font-bold mb-4">Welcome to Magic Spend</h2>
+				<p className="text-gray-600 mb-6">
+					To get started with Magic Spend, you'll need to enter your Pimlico API key.
+					This key will be stored securely in your browser and used for all future transactions.
 				</p>
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					<BalanceCard balance={{ balance }} primary={true} />
-				</div>
-			</div>
 
-			<div className="mb-8">
-				<div className="flex items-center gap-4 mb-4">
-					<h3 className="text-2xl font-bold">Staking Overview</h3>
-					<Link
-						href="/add-stake"
-						className="text-purple-600 hover:text-purple-800"
-					>
-						Add Stake
-					</Link>
-				</div>
-				<p className="text-gray-600 mb-4">
-					Below are your individual stakes across different chains. The sum of
-					these stakes determines your total balance shown above.
-				</p>
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-					{stakes.map((stake) => (
-						<BalanceCard
-							key={stake.chainId}
-							balance={{
-								chain: getChain(stake.chainId),
-								balance: stake.amount,
+				<div className="mb-6">
+					<label className="block text-sm font-medium mb-2">
+						Pimlico API Key
+					</label>
+					<div className="flex gap-2">
+						<input
+							type="text"
+							value={apiKey}
+							onChange={(e) => {
+								setApiKey(e.target.value);
+								setIsSaved(false);
 							}}
+							placeholder="Enter your Pimlico API key"
+							className="flex-1 p-2 border rounded"
 						/>
-					))}
+						<button
+							onClick={handleSave}
+							disabled={!apiKey || isSaved}
+							className="px-4 py-2 bg-purple-500 text-white rounded disabled:opacity-50"
+						>
+							{isSaved ? "Saved" : "Save"}
+						</button>
+						{isSaved && (
+							<button
+								onClick={handleRemove}
+								className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+							>
+								Remove
+							</button>
+						)}
+					</div>
+				</div>
+
+				<div className="space-y-4">
+					<div className="flex items-center gap-2">
+						<Link
+							href="https://docs.pimlico.io/infra/magic-spend"
+							target="_blank"
+							className="text-purple-600 hover:text-purple-800"
+						>
+							📚 Read the Magic Spend documentation
+						</Link>
+					</div>
+					<div className="flex items-center gap-2">
+						<Link
+							href="https://dashboard.pimlico.io"
+							target="_blank"
+							className="text-purple-600 hover:text-purple-800"
+						>
+							📊 Get your Pimlico API key
+						</Link>
+					</div>
 				</div>
 			</div>
 		</div>
