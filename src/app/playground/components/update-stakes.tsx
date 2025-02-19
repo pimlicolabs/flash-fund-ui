@@ -89,7 +89,7 @@ export default function UpdateStakes({ addLog, stakes, onStakesUpdate }: UpdateS
     <div className="space-y-6">
       {stakes.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-md font-medium">Current Stakes</h3>
+          <h2 className="text-xl font-semibold mb-4">Update Stakes</h2>
           <div className="grid grid-cols-3 gap-4">
             {stakes.map((stake, index) => {
               const chain = getChainById(stake.chainId);

@@ -6,9 +6,92 @@ import { useAccount } from 'wagmi';
 import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
 import { useConfig } from "wagmi";
 import UpdateStakes from "./update-stakes";
+import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
+import { isAddress, getAddress } from "viem";
 
 interface ResourceLockModeProps {
   addLog: (type: "request" | "response", data: any) => void;
+}
+
+interface TransferFundsProps {
+  addLog: (type: "request" | "response", data: any) => void;
+  disabled?: boolean;
+}
+
+function TransferFunds({ addLog, disabled }: TransferFundsProps) {
+  const [amount, setAmount] = useState<string>("0.0000000123");
+  const [recipient, setRecipient] = useState<string>("");
+  const [selectedChain, setSelectedChain] = useState<typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia>(sepolia);
+  const chains = [baseSepolia, sepolia, arbitrumSepolia];
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleTransfer = async () => {
+    // Prepare allowance
+    // Sponsor transaction
+  }
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold mb-4">Transfer Funds</h2>
+      <div>
+        <label className="block text-sm font-medium mb-2">Chain</label>
+        <select
+          value={selectedChain.id}
+          onChange={(e) => {
+            const chain = chains.find((c) => c.id === Number(e.target.value));
+            if (chain) setSelectedChain(chain);
+          }}
+          className="w-full p-2 border rounded"
+          disabled={disabled}
+        >
+          {chains.map((chain) => (
+            <option key={chain.id} value={chain.id}>
+              {chain.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">Amount (ETH)</label>
+        <input
+          type="string"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-full p-2 border rounded"
+          placeholder="0.0000000123"
+          disabled={disabled}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">Recipient Address</label>
+        <input
+          type="text"
+          value={recipient}
+          onChange={(e) => {
+            try {
+              if (e.target.value && !isAddress(e.target.value)) return;
+              setRecipient(getAddress(e.target.value));
+            } catch (err) {
+              // Invalid address, ignore
+            }
+          }}
+          placeholder="0x..."
+          className="w-full p-2 border rounded"
+          disabled={disabled}
+        />
+      </div>
+
+      <button
+        onClick={() => {}}
+        disabled={isLoading || !isAddress(recipient) || !amount || disabled}
+        className="w-full py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
+      >
+        {isLoading ? "Processing..." : "Send funds"}
+      </button>
+    </div>
+  );
 }
 
 export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
@@ -60,6 +143,10 @@ export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
         addLog={addLog} 
         stakes={stakes}
         onStakesUpdate={setStakes} 
+      />
+      <TransferFunds 
+        addLog={addLog}
+        disabled={loading} 
       />
     </div>
   );
