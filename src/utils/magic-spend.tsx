@@ -58,10 +58,9 @@ export type PimlicoMagicSpendStake = {
 	chainId: number;
 	token: Address;
 	amount: bigint;
-	pending: bigint;
-	remaining: bigint;
 	unstakeDelaySec: bigint;
 	withdrawTime: Date;
+	staked: boolean;
 };
 
 export type SponsorWithdrawalCreditParams = {
@@ -74,6 +73,13 @@ export type SponsorWithdrawalCreditParams = {
 	};
 };
 
+export type GetStakesParams = {
+	type: "pimlico_lock";
+	data: {
+		account: Address;
+	};
+};
+
 export const MAGIC_SPEND_ETH: Address =
 	"0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
@@ -81,7 +87,10 @@ export type PimlicoMagicSpendSchema = [
 	{
 		Parameters: [
 			{
-				account: Address;
+				type: "pimlico_lock";
+				data: {
+					account: Address;
+				};
 			},
 		];
 		ReturnType: PimlicoMagicSpendStake[];
@@ -268,13 +277,16 @@ export class MagicSpend {
 		);
 	}
 
-	async getStakes(account: Address) {
+	async getStakes({
+		type,
+		data,
+	}: GetStakesParams) {
 		const stakes = await this.getClient().request({
 			method: "pimlico_getMagicSpendStakes",
 			params: [
 				{
-					account,
-					asset: MAGIC_SPEND_ETH,
+					type,
+					data,
 				},
 			],
 		});
@@ -284,25 +296,7 @@ export class MagicSpend {
 			withdrawTime: new Date(Number(stake.withdrawTime)),
 			unstakeDelaySec: BigInt(stake.unstakeDelaySec),
 			amount: BigInt(stake.amount),
-			remaining: BigInt(stake.remaining),
-			pending: BigInt(stake.pending),
 			chainId: Number(stake.chainId),
-		}));
-	}
-
-	async getAllowancesByOperator(operator: Address) {
-		const allowances = await this.getClient().request({
-			method: "pimlico_getMagicSpendAllowancesByOperator",
-			params: [operator],
-		});
-
-		return allowances.map((allowance) => ({
-			...allowance,
-			assets: allowance.assets.map((asset) => ({
-				...asset,
-				amount: BigInt(asset.amount),
-				used: BigInt(asset.used),
-			})),
 		}));
 	}
 
@@ -310,13 +304,6 @@ export class MagicSpend {
 		return this.getClient().request({
 			method: "pimlico_prepareMagicSpendAllowance",
 			params: [params],
-		});
-	}
-
-	async grantAllowance(allowance: MagicSpendAllowance, signature: Hex) {
-		return this.getClient().request({
-			method: "pimlico_grantMagicSpendAllowance",
-			params: [{ allowance, signature }],
 		});
 	}
 
