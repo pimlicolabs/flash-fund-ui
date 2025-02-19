@@ -41,7 +41,14 @@ export default function CreditMode({ addLog }: CreditModeProps) {
   const [selectedChain, setSelectedChain] = useState<typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia>(sepolia);
   const chains = [baseSepolia, sepolia, arbitrumSepolia];
   const config = useConfig();
-  const magicSpend = new MagicSpend(config);
+  const magicSpend = new MagicSpend(config, {
+    onRequest: (method, params) => {
+      addLog("request", { method, params });
+    },
+    onResponse: (method, params, result) => {
+      addLog("response", { method, params, result });
+    },
+  });
 
   const handleSubmit = async () => {
     try {

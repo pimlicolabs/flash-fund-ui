@@ -8,12 +8,18 @@ import {
 	type Client,
 	type Hex,
 	type Transport,
+	type HttpTransport,
+	type HttpTransportConfig,
 	createClient,
 	createPublicClient,
+	createTransport,
+	RpcRequestError,
+	UrlRequiredError,
 } from "viem";
 import { sepolia } from "viem/chains";
 import { Config } from "wagmi";
 import { getPimlicoUrl } from ".";
+import { getHttpRpcClient } from "viem/utils";
 
 export type MagicSpendCall = {
 	to: Address;
@@ -131,14 +137,86 @@ export type MagicSpendBalance = {
 
 export type MagicSpendSponsorWithdrawalResponse = [Address, Hex];
 
+export type LogHooks = {
+	onRequest?: (method: string, params: any) => void;
+	onResponse?: (method: string, params: any, result: any) => void;
+};
+
+function createMagicSpendTransport(
+	url: string,
+	config: HttpTransportConfig & { logHooks?: LogHooks }
+): HttpTransport {
+	const {
+		fetchOptions,
+		key = "http",
+		name = "HTTP JSON-RPC",
+		retryDelay,
+		logHooks,
+	} = config;
+
+	return ({ chain, retryCount: retryCount_, timeout: timeout_ }) => {
+		const retryCount = config.retryCount ?? retryCount_;
+		const timeout = timeout_ ?? config.timeout ?? 10_000;
+
+		if (!url) {
+			throw new UrlRequiredError();
+		}
+
+		return createTransport(
+			{
+				key,
+				name,
+                async request({ method, params }) {
+					const body = { method, params: params || [] };
+					const httpClient = getHttpRpcClient(url);
+
+					if (logHooks?.onRequest) {
+						logHooks.onRequest(method, params);
+					}
+
+					const { error, result } = await httpClient.request({
+						body,
+						fetchOptions,
+						timeout,
+					});
+
+					if (error) {
+						throw new RpcRequestError({
+							body,
+							error,
+							url: url,
+						});
+					}
+
+					if (logHooks?.onResponse) {
+						logHooks.onResponse(result, params, result);
+					}
+
+					return result;
+				},
+				retryCount,
+				retryDelay,
+				timeout,
+				type: "http",
+			},
+			{
+				fetchOptions,
+				url,
+			}
+		);
+	};
+}
+
 export class MagicSpend {
 	wagmiConfig: Config;
 	chainId: number;
 	pimlicoApiUrl: string;
+	logHooks?: LogHooks;
 
-	constructor(wagmiConfig: Config) {
+	constructor(wagmiConfig: Config, logHooks?: LogHooks) {
 		this.wagmiConfig = wagmiConfig;
 		this.chainId = sepolia.id;
+		this.logHooks = logHooks;
 		const pimlicoApiUrl = process.env.NEXT_PUBLIC_PIMLICO_API_URL;
 
 		if (!pimlicoApiUrl) {
@@ -161,8 +239,12 @@ export class MagicSpend {
 		Account | undefined,
 		PimlicoMagicSpendSchema
 	> {
+		const transport = createMagicSpendTransport(getPimlicoUrl(this.chainId), {
+			logHooks: this.logHooks,
+		});
+
 		return createPublicClient({
-			transport: http(getPimlicoUrl(this.chainId)),
+			transport,
 		});
 	}
 
