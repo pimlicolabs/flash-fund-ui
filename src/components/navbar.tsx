@@ -20,10 +20,18 @@ const NavBar = () => {
 				<Link href="/transfer" className="hover:text-primary">
 					Transfer
 				</Link>
-				<Link href="https://docs.pimlico.io/infra/magic-spend" target="_blank" className="hover:text-primary">
+				<Link
+					href="https://docs.pimlico.io/infra/magic-spend"
+					target="_blank"
+					className="hover:text-primary"
+				>
 					Docs
 				</Link>
-				<Link href="https://cal.com/sergey-potekhin" target="_blank" className="hover:text-primary">
+				<Link
+					href="https://cal.com/sergey-potekhin"
+					target="_blank"
+					className="hover:text-primary"
+				>
 					Schedule a call
 				</Link>
 			</div>

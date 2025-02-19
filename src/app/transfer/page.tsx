@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Address, getAddress, isAddress, parseEther, toHex, encodeFunctionData, createPublicClient, http, PrivateKeyAccount } from "viem";
+import {
+	Address,
+	getAddress,
+	isAddress,
+	parseEther,
+	toHex,
+	encodeFunctionData,
+	createPublicClient,
+	http,
+	PrivateKeyAccount,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { pimlicoStorage } from "@/utils/storage";
 import { Bounce, toast } from "react-toastify";
@@ -15,7 +25,8 @@ import { MagicSpendWithdrawalManagerAbi } from "@/abi/MagicSpendWithdrawalManage
 
 const ETH_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 // This is a dummy private key for testing - DO NOT use in production
-const DUMMY_KEY = "0x1234567890123456789012345678901234567890123456789012345678901234";
+const DUMMY_KEY =
+	"0x1234567890123456789012345678901234567890123456789012345678901234";
 
 if (!process.env.NEXT_PUBLIC_PIMLICO_API_URL) {
 	throw new Error("NEXT_PUBLIC_PIMLICO_API_URL is not set");
@@ -26,8 +37,12 @@ export default function Transfer() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [transferStatus, setTransferStatus] = useState<string>("");
 	const [amount] = useState<string>("0.0000000123");
-	const [recipientInput, setRecipientInput] = useState<Address>("0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1");
-	const [selectedChain, setSelectedChain] = useState<typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia>(sepolia);
+	const [recipientInput, setRecipientInput] = useState<Address>(
+		"0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1",
+	);
+	const [selectedChain, setSelectedChain] = useState<
+		typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia
+	>(sepolia);
 	const chains = [sepolia, baseSepolia, arbitrumSepolia];
 
 	const getPimlicoUrl = (chainId: number) => {
@@ -71,21 +86,21 @@ export default function Transfer() {
 				amount: toHex(parseEther(amount)),
 				salt: "0x0",
 				signature: "0x0",
-			}
+			};
 
 			console.log("Request params:", params);
 
 			setTransferStatus("Requesting withdrawal data...");
 			const response = await fetch(getPimlicoUrl(selectedChain.id), {
-				method: 'POST',
+				method: "POST",
 				headers: {
-					'Content-Type': 'application/json',
+					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
 					jsonrpc: "2.0",
 					method: "pimlico_sponsorMagicSpendWithdrawal",
 					params: [params, null],
-					id: 1
+					id: 1,
 				}),
 			});
 
@@ -93,7 +108,7 @@ export default function Transfer() {
 			console.log("API Response:", data);
 
 			if (data.error) {
-				throw new Error(data.error.message || 'Transfer failed');
+				throw new Error(data.error.message || "Transfer failed");
 			}
 
 			// Extract withdrawal data and signature from response
@@ -202,9 +217,8 @@ export default function Transfer() {
 					progress: undefined,
 					theme: "light",
 					transition: Bounce,
-				}
+				},
 			);
-
 		} catch (error) {
 			console.error("Transfer error:", error);
 			setTransferStatus("Transfer failed");
@@ -223,26 +237,34 @@ export default function Transfer() {
 			<div className="max-w-lg w-full">
 				<h1 className="text-2xl font-bold mb-4">Send a Transfer</h1>
 				<p className="text-gray-600 mb-6">
-					This is a demo of Magic Spend transfer functionality. For security reasons, it's limited to testnet chains and small amounts.
-					To explore the full potential of Magic Spend or integrate it into your application, please{' '}
-					<Link href="https://docs.pimlico.io/infra/magic-spend" target="_blank" className="text-purple-600 hover:text-purple-800">
+					This is a demo of Magic Spend transfer functionality. For security
+					reasons, it's limited to testnet chains and small amounts. To explore
+					the full potential of Magic Spend or integrate it into your
+					application, please{" "}
+					<Link
+						href="https://docs.pimlico.io/infra/magic-spend"
+						target="_blank"
+						className="text-purple-600 hover:text-purple-800"
+					>
 						read the documentation
-					</Link>
-					{' '}or{' '}
-					<Link href="https://cal.com/sergey-potekhin" target="_blank" className="text-purple-600 hover:text-purple-800">
+					</Link>{" "}
+					or{" "}
+					<Link
+						href="https://cal.com/sergey-potekhin"
+						target="_blank"
+						className="text-purple-600 hover:text-purple-800"
+					>
 						schedule a call
 					</Link>
 					.
 				</p>
 
 				<div className="mb-4">
-					<label className="block text-sm font-medium mb-2">
-						Chain
-					</label>
+					<label className="block text-sm font-medium mb-2">Chain</label>
 					<select
 						value={selectedChain.id}
 						onChange={(e) => {
-							const chain = chains.find(c => c.id === Number(e.target.value));
+							const chain = chains.find((c) => c.id === Number(e.target.value));
 							if (chain) setSelectedChain(chain);
 						}}
 						className="w-full p-2 border rounded"
@@ -269,7 +291,9 @@ export default function Transfer() {
 				</div>
 
 				<div className="mb-6">
-					<label className="block text-sm font-medium mb-2">Amount (fixed for demo)</label>
+					<label className="block text-sm font-medium mb-2">
+						Amount (fixed for demo)
+					</label>
 					<input
 						type="text"
 						value={amount}
@@ -284,7 +308,7 @@ export default function Transfer() {
 					className="w-full py-2 bg-purple-500 text-white rounded disabled:opacity-50 relative overflow-hidden"
 				>
 					<span className={`transition-opacity duration-300`}>
-						{transferStatus || (isLoading ? 'Processing...' : 'Send Transfer')}
+						{transferStatus || (isLoading ? "Processing..." : "Send Transfer")}
 					</span>
 				</button>
 			</div>

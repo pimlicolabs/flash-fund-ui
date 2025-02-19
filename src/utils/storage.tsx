@@ -1,13 +1,15 @@
 import { createStorage } from "wagmi";
 
 export class PimlicoStorage {
-	private storage: ReturnType<typeof createStorage<{
-		"pimlico-api-key": string;
-	}>>;
+	private storage: ReturnType<
+		typeof createStorage<{
+			"pimlico-api-key": string;
+		}>
+	>;
 
 	constructor() {
 		this.storage = createStorage({
-			storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+			storage: typeof window !== "undefined" ? window.localStorage : undefined,
 			key: "pimlico-magic-spend",
 		});
 	}
@@ -25,4 +27,4 @@ export class PimlicoStorage {
 	}
 }
 
-export const pimlicoStorage = new PimlicoStorage(); 
+export const pimlicoStorage = new PimlicoStorage();

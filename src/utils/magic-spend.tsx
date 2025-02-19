@@ -156,7 +156,9 @@ export class MagicSpend {
 		PimlicoMagicSpendSchema
 	> {
 		return createPublicClient({
-			transport: http(this.pimlicoApiUrl.replace("CHAIN_ID", this.chainId.toString())),
+			transport: http(
+				this.pimlicoApiUrl.replace("CHAIN_ID", this.chainId.toString()),
+			),
 		});
 	}
 

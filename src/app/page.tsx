@@ -54,8 +54,9 @@ export default function Home() {
 			<div className="mb-8">
 				<h2 className="text-2xl font-bold mb-4">Welcome to Magic Spend</h2>
 				<p className="text-gray-600 mb-6">
-					To get started with Magic Spend, you'll need to enter your Pimlico API key.
-					This key will be stored securely in your browser and used for all future transactions.
+					To get started with Magic Spend, you'll need to enter your Pimlico API
+					key. This key will be stored securely in your browser and used for all
+					future transactions.
 				</p>
 
 				<div className="mb-6">
