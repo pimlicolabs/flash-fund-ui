@@ -17,8 +17,8 @@ const NavBar = () => {
 					/>
 				</Link>
 
-				<Link href="/transfer" className="hover:text-primary">
-					Transfer
+				<Link href="/playground" className="hover:text-primary">
+					Playground
 				</Link>
 				<Link
 					href="https://docs.pimlico.io/infra/magic-spend"
