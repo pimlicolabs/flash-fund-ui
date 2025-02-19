@@ -7,7 +7,6 @@ import {
   isAddress,
   parseEther,
   toHex,
-  encodeFunctionData,
   createPublicClient,
   http,
 } from "viem";
@@ -19,6 +18,9 @@ import { toSafeSmartAccount } from "permissionless/accounts";
 import { createSmartAccountClient } from "permissionless";
 import { MagicSpendWithdrawalManagerAbi } from "@/abi/MagicSpendWithdrawalManager";
 import { toast } from "react-toastify";
+import { getPimlicoUrl } from "@/utils";
+import { MagicSpend } from "@/utils/magic-spend";
+import { useConfig } from "wagmi";
 
 const ETH_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 // This is a dummy private key for testing - DO NOT use in production
@@ -38,53 +40,27 @@ export default function CreditMode({ addLog }: CreditModeProps) {
   const [recipient, setRecipient] = useState<Address>("0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1");
   const [selectedChain, setSelectedChain] = useState<typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia>(sepolia);
   const chains = [baseSepolia, sepolia, arbitrumSepolia];
-
-  const getPimlicoUrl = (chainId: number) => {
-    return `${process.env.NEXT_PUBLIC_PIMLICO_API_URL}v2/${chainId}/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}`;
-  };
+  const config = useConfig();
+  const magicSpend = new MagicSpend(config);
 
   const handleSubmit = async () => {
     try {
       setIsLoading(true);
       addLog("debug", { message: "Preparing withdrawal..." });
 
-      const params = {
+      await magicSpend.setChainId(selectedChain.id);
+
+      const [withdrawalManagerAddress, withdrawalCallData] = await magicSpend.sponsorWithdrawal({
         type: "credits",
         data: {
-          recipient,
           token: ETH_ADDRESS,
+          recipient,
           amount: toHex(parseEther(amount)),
-          salt: "0x0",
-          signature: "0x0",  
-        }
-      };
-
-      addLog("request", {
-        method: "pimlico_sponsorMagicSpendWithdrawal",
-        params: [params, null],
-      });
-
-      const response = await fetch(getPimlicoUrl(selectedChain.id), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+          signature: "0x0",
         },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "pimlico_sponsorMagicSpendWithdrawal",
-          params: [params, null],
-          id: 1,
-        }),
       });
 
-      const data = await response.json();
-      addLog("response", data);
-
-      if (data.error) {
-        throw new Error(data.error.message || "Withdrawal request failed");
-      }
-
-      const [withdrawalManagerAddress, withdrawalCallData] = data.result;
+      addLog("debug", { message: "Withdrawal sponsored", withdrawalManagerAddress, withdrawalCallData });
 
       const publicClient = createPublicClient({
         chain: selectedChain,

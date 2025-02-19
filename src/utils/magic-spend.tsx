@@ -13,6 +13,7 @@ import {
 } from "viem";
 import { sepolia } from "viem/chains";
 import { Config } from "wagmi";
+import { getPimlicoUrl } from ".";
 
 export type MagicSpendCall = {
 	to: Address;
@@ -57,6 +58,16 @@ export type PimlicoMagicSpendStake = {
 	withdrawTime: Date;
 };
 
+export type SponsorWithdrawalCreditParams = {
+	type: "credits";
+	data: {
+		token: Address;
+		recipient: Address;
+		amount: string;
+		signature: Hex;
+	};
+};
+
 export const MAGIC_SPEND_ETH: Address =
 	"0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
@@ -65,7 +76,6 @@ export type PimlicoMagicSpendSchema = [
 		Parameters: [
 			{
 				account: Address;
-				asset: Address;
 			},
 		];
 		ReturnType: PimlicoMagicSpendStake[];
@@ -94,16 +104,8 @@ export type PimlicoMagicSpendSchema = [
 		Method: "pimlico_grantMagicSpendAllowance";
 	},
 	{
-		Parameters: [
-			{
-				token: Address;
-				recipient: Address;
-				amount: string;
-				signature: Hex;
-				salt: Hex;
-			},
-		];
-		ReturnType: [MagicSpendWithdrawal, Hex];
+		Parameters: [SponsorWithdrawalCreditParams, null];
+		ReturnType: [Address, Hex];
 		Method: "pimlico_sponsorMagicSpendWithdrawal";
 	},
 	{
@@ -127,6 +129,8 @@ export type MagicSpendBalance = {
 	balance: bigint;
 };
 
+export type MagicSpendSponsorWithdrawalResponse = [Address, Hex];
+
 export class MagicSpend {
 	wagmiConfig: Config;
 	chainId: number;
@@ -140,6 +144,8 @@ export class MagicSpend {
 		if (!pimlicoApiUrl) {
 			throw new Error("NEXT_PUBLIC_PIMLICO_API_URL is not set");
 		}
+
+		console.log(pimlicoApiUrl)
 
 		this.pimlicoApiUrl = pimlicoApiUrl;
 	}
@@ -156,9 +162,7 @@ export class MagicSpend {
 		PimlicoMagicSpendSchema
 	> {
 		return createPublicClient({
-			transport: http(
-				this.pimlicoApiUrl.replace("CHAIN_ID", this.chainId.toString()),
-			),
+			transport: http(getPimlicoUrl(this.chainId)),
 		});
 	}
 
@@ -235,26 +239,17 @@ export class MagicSpend {
 	}
 
 	async sponsorWithdrawal({
-		token,
-		recipient,
-		amount,
-		signature,
-	}: {
-		token: Address;
-		recipient: Address;
-		amount: string;
-		signature: Hex;
-	}) {
+		type,
+		data
+	}: SponsorWithdrawalCreditParams): Promise<MagicSpendSponsorWithdrawalResponse> {
 		return this.getClient().request({
 			method: "pimlico_sponsorMagicSpendWithdrawal",
 			params: [
 				{
-					token,
-					recipient,
-					amount,
-					signature,
-					salt: "0x000000",
+					type,
+					data,
 				},
+				null,
 			],
 		});
 	}
