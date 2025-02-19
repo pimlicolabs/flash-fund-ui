@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { arbitrumSepolia, baseSepolia, sepolia } from "viem/chains";
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAccount } from 'wagmi';
 
 interface ResourceLockModeProps {
   addLog: (type: "request" | "response", data: any) => void;
 }
 
 export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
+  const { isConnected } = useAccount();
   const [resourceId, setResourceId] = useState<string>("");
   const [lockDuration, setLockDuration] = useState<string>("3600"); // 1 hour in seconds
   const [maxAmount, setMaxAmount] = useState<string>("0.01");
@@ -26,7 +29,7 @@ export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
     };
 
     addLog("request", request);
-    
+
     // Simulate response for now
     setTimeout(() => {
       addLog("response", {
@@ -39,6 +42,14 @@ export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
       });
     }, 500);
   };
+
+  if (!isConnected) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <ConnectButton />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

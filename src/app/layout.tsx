@@ -3,6 +3,8 @@ import "./globals.css";
 import NavBar from "@/components/navbar";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import '@rainbow-me/rainbowkit/styles.css';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
 	title: "Magic Spend",
@@ -17,9 +19,11 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body>
-				<NavBar />
-				{children}
-				<ToastContainer />
+				<Providers>
+					<NavBar />
+					{children}
+					<ToastContainer />
+				</Providers>
 			</body>
 		</html>
 	);
