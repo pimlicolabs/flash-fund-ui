@@ -37,7 +37,7 @@ export default function CreditMode({ addLog }: CreditModeProps) {
   const [amount, setAmount] = useState<string>("0.0000000123");
   const [recipient, setRecipient] = useState<Address>("0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1");
   const [selectedChain, setSelectedChain] = useState<typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia>(sepolia);
-  const chains = [sepolia, baseSepolia, arbitrumSepolia];
+  const chains = [baseSepolia, sepolia, arbitrumSepolia];
 
   const getPimlicoUrl = (chainId: number) => {
     return `${process.env.NEXT_PUBLIC_PIMLICO_API_URL}v2/${chainId}/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}`;
@@ -49,11 +49,14 @@ export default function CreditMode({ addLog }: CreditModeProps) {
       addLog("debug", { message: "Preparing withdrawal..." });
 
       const params = {
-        recipient,
-        token: ETH_ADDRESS,
-        amount: toHex(parseEther(amount)),
-        salt: "0x0",
-        signature: "0x0",
+        type: "credits",
+        data: {
+          recipient,
+          token: ETH_ADDRESS,
+          amount: toHex(parseEther(amount)),
+          salt: "0x0",
+          signature: "0x0",  
+        }
       };
 
       addLog("request", {
@@ -81,7 +84,7 @@ export default function CreditMode({ addLog }: CreditModeProps) {
         throw new Error(data.error.message || "Withdrawal request failed");
       }
 
-      const [withdrawal, signature] = data.result;
+      const [withdrawalManagerAddress, withdrawalCallData] = data.result;
 
       const publicClient = createPublicClient({
         chain: selectedChain,
@@ -119,28 +122,14 @@ export default function CreditMode({ addLog }: CreditModeProps) {
         },
       });
 
-      const magicSpendCallData = encodeFunctionData({
-        abi: MagicSpendWithdrawalManagerAbi,
-        functionName: "withdraw",
-        args: [
-          {
-            ...withdrawal,
-            validUntil: Number(withdrawal.validUntil),
-            validAfter: Number(withdrawal.validAfter),
-            salt: Number(withdrawal.salt),
-          },
-          signature,
-        ],
-      });
-
       addLog("debug", { message: "Sending user operation..." });
 
       const userOperation = await smartAccountClient.prepareUserOperation({
         calls: [
           {
-            to: "0x0526f93A854c6f5cfEb9fBbFC70d32Fc4F46F182",
+            to: withdrawalManagerAddress,
             value: parseEther("0"),
-            data: magicSpendCallData,
+            data: withdrawalCallData,
           },
         ],
       });

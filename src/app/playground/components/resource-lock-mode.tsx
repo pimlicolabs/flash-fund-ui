@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { arbitrumSepolia, baseSepolia, sepolia } from "viem/chains";
 
 interface ResourceLockModeProps {
   addLog: (type: "request" | "response", data: any) => void;
@@ -10,6 +11,7 @@ export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
   const [resourceId, setResourceId] = useState<string>("");
   const [lockDuration, setLockDuration] = useState<string>("3600"); // 1 hour in seconds
   const [maxAmount, setMaxAmount] = useState<string>("0.01");
+  const chains = [baseSepolia, sepolia, arbitrumSepolia];
 
   const handleSubmit = async () => {
     // Example request to be replaced with actual implementation
