@@ -61,6 +61,8 @@ export type PimlicoMagicSpendStake = {
 	unstakeDelaySec: bigint;
 	withdrawTime: Date;
 	staked: boolean;
+	testnet: boolean;
+	usdValue: bigint;
 };
 
 export type SponsorWithdrawalCreditParams = {
@@ -297,6 +299,8 @@ export class MagicSpend {
 			unstakeDelaySec: BigInt(stake.unstakeDelaySec),
 			amount: BigInt(stake.amount),
 			chainId: Number(stake.chainId),
+			testnet: stake.testnet,
+			usdValue: BigInt(stake.usdValue),
 		}));
 	}
 

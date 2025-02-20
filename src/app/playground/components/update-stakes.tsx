@@ -10,35 +10,6 @@ interface UpdateStakesProps {
   onStakesUpdate: (stakes: PimlicoMagicSpendStake[]) => void;
 }
 
-function StakeCard({ stake, chain }: { stake: PimlicoMagicSpendStake; chain: any }) {
-  return (
-    <div className="p-4 border rounded-lg bg-white/5 space-y-2">
-      <div className="flex justify-between items-center">
-        <span className="font-medium">{chain.name}</span>
-        <span className={`px-2 py-1 rounded text-sm ${stake.staked ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-          {stake.staked ? 'Staked' : 'Unstaked'}
-        </span>
-      </div>
-      <div className="space-y-1 text-sm">
-        <div className="flex justify-between">
-          <span className="text-gray-400">Amount:</span>
-          <span>{formatEther(stake.amount)} ETH</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400">Unstake Delay:</span>
-          <span>{Number(stake.unstakeDelaySec) / 3600}h</span>
-        </div>
-        {stake.withdrawTime && stake.withdrawTime.getTime() > 0 && (
-          <div className="flex justify-between">
-            <span className="text-gray-400">Withdraw Time:</span>
-            <span>{stake.withdrawTime.toLocaleString()}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function UpdateStakes({ addLog, stakes, onStakesUpdate }: UpdateStakesProps) {
   const { isConnected, address } = useAccount();
   const config = useConfig();
@@ -85,20 +56,87 @@ export default function UpdateStakes({ addLog, stakes, onStakesUpdate }: UpdateS
 
   if (!isConnected) return null;
 
+  // Sort stakes by USD value (testnet stakes at the end)
+  const sortedStakes = [...stakes].sort((a, b) => {
+    if (a.testnet && !b.testnet) return 1;
+    if (!a.testnet && b.testnet) return -1;
+    return Number(b.usdValue - a.usdValue);
+  });
+
   return (
     <div className="space-y-6">
-      {stakes.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold mb-4">Update Stakes</h2>
-          <div className="grid grid-cols-3 gap-4">
-            {stakes.map((stake, index) => {
-              const chain = getChainById(stake.chainId);
-              if (!chain) return null;
-              return <StakeCard key={index} stake={stake} chain={chain} />;
-            })}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Your Stakes</h2>
+        <p className="text-gray-600 mb-4">
+          Below are your active stakes across all supported networks.
+        </p>
+        
+        {stakes.length > 0 ? (
+          <div className="relative overflow-x-auto" style={{ maxHeight: '320px' }}>
+            <table className="w-full text-sm text-left text-gray-500">
+              <thead className="text-xs uppercase bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3">Network</th>
+                  <th scope="col" className="px-6 py-3 text-right">Amount</th>
+                  <th scope="col" className="px-6 py-3 text-right">USD Value</th>
+                  <th scope="col" className="px-6 py-3 text-right">Withdrawal Status</th>
+                  <th scope="col" className="px-6 py-3 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedStakes.map((stake, index) => {
+                  const chain = getChainById(stake.chainId);
+                  if (!chain) return null;
+
+                  let withdrawalStatus = "-";
+                  if (stake.withdrawTime && stake.withdrawTime.getTime() > 0) {
+                    const timeLeft = stake.withdrawTime.getTime() - Date.now();
+                    if (timeLeft > 0) {
+                      const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
+                      withdrawalStatus = `${hoursLeft}h until withdrawal`;
+                    } else {
+                      withdrawalStatus = "Ready to withdraw";
+                    }
+                  } else if (stake.unstakeDelaySec) {
+                    withdrawalStatus = `${Number(stake.unstakeDelaySec) / 3600}h delay`;
+                  }
+
+                  return (
+                    <tr key={index} className="bg-white">
+                      <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span>{chain.name}</span>
+                          {stake.testnet && (
+                            <span className="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded">
+                              Testnet
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <td className="px-6 py-4 text-right">{formatEther(stake.amount)} ETH</td>
+                      <td className="px-6 py-4 text-right">
+                        {stake.testnet ? "-" : `$${formatEther(stake.usdValue)}`}
+                      </td>
+                      <td className="px-6 py-4 text-right">{withdrawalStatus}</td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          stake.staked ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
+                        }`}>
+                          {stake.staked ? 'Staked' : 'Unstaked'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="bg-gray-50 rounded-lg p-8 text-center">
+            <p className="text-gray-600">No stakes found yet. Your stakes will appear here once you create them.</p>
+          </div>
+        )}
+      </div>
 
       <div className="flex justify-end">
         <button
