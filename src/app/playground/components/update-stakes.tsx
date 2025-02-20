@@ -78,7 +78,7 @@ export default function UpdateLocks({ addLog, stakes: locks, onStakesUpdate: onL
               <thead className="text-xs uppercase bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3">Network</th>
-                  <th scope="col" className="px-6 py-3 text-right">Amount</th>
+                  <th scope="col" className="px-6 py-3 text-right">Locked / Pending</th>
                   <th scope="col" className="px-6 py-3 text-right">USD Value</th>
                   <th scope="col" className="px-6 py-3 text-right">Withdrawal Status</th>
                   <th scope="col" className="px-6 py-3 text-right">Status</th>
@@ -88,6 +88,15 @@ export default function UpdateLocks({ addLog, stakes: locks, onStakesUpdate: onL
                 {sortedStakes.map((stake, index) => {
                   const chain = getChainById(stake.chainId);
                   if (!chain) return null;
+
+                  const formatAmount = (amount: bigint) => {
+                    const value = Number(formatEther(amount));
+                    if (value === 0) return "0.00";
+                    return value < 0.01 ? "<0.01" : value.toFixed(2);
+                  };
+
+                  const lockedAmount = formatAmount(stake.amount);
+                  const pendingAmount = formatAmount(stake.pending);
 
                   let withdrawalStatus = "-";
                   if (stake.withdrawTime && stake.withdrawTime.getTime() > 0) {
@@ -114,9 +123,9 @@ export default function UpdateLocks({ addLog, stakes: locks, onStakesUpdate: onL
                           )}
                         </div>
                       </th>
-                      <td className="px-6 py-4 text-right">{formatEther(stake.amount)} ETH</td>
+                      <td className="px-6 py-4 text-right">{`${lockedAmount} / ${pendingAmount} ETH`}</td>
                       <td className="px-6 py-4 text-right">
-                        {stake.testnet ? "-" : `$${formatEther(stake.usdValue)}`}
+                        {stake.testnet ? "-" : `$${Number(formatEther(stake.usdValue)).toFixed(2)}`}
                       </td>
                       <td className="px-6 py-4 text-right">{withdrawalStatus}</td>
                       <td className="px-6 py-4 text-right">

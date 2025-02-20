@@ -64,6 +64,7 @@ export type PimlicoMagicSpendStake = {
 	staked: boolean;
 	testnet: boolean;
 	usdValue: bigint;
+	pending: bigint;
 };
 
 export type SponsorWithdrawalCreditParams = {
@@ -319,6 +320,7 @@ export class MagicSpend {
 			chainId: Number(stake.chainId),
 			testnet: stake.testnet,
 			usdValue: BigInt(stake.usdValue),
+			pending: BigInt(stake.pending || "0"),
 		}));
 	}
 
