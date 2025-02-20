@@ -129,7 +129,7 @@ export default function UpdateLocks({
 									}
 
 									return (
-										<tr key={index} className="bg-white">
+										<tr key={index} className="bg-white border-b border-gray-50 hover:bg-gray-50 transition-colors">
 											<th
 												scope="row"
 												className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"

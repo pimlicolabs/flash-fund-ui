@@ -201,11 +201,13 @@ export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
 	return (
 		<div className="space-y-6">
 			<AddLock addLog={addLog} disabled={loading} />
+			<hr className="border-gray-100" />
 			<UpdateStakes
 				addLog={addLog}
 				stakes={stakes}
 				onStakesUpdate={setStakes}
 			/>
+			<hr className="border-gray-100" />
 			<TransferFunds addLog={addLog} disabled={loading} />
 		</div>
 	);
