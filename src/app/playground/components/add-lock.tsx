@@ -82,7 +82,7 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
       });
 
       writeContract({
-        address: "0xa5cB33bbC3aA8a69b1FDfE66A2E5bD196407c5BD",
+        address: "0x71aC00C71A5c3326707cEe1474e802323B5CDb7F",
         abi: MagicSpendStakeManagerAbi,
         functionName: "addStake",
         args: [ETH, parseEther(amount), unstakeDelaySec],
@@ -134,7 +134,6 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
           <select
             className="w-full p-2 border rounded"
             disabled={disabled}
-            value="pimlico"
           >
             <option value="pimlico">Pimlico Lock</option>
           </select>

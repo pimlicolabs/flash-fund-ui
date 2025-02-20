@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount } from 'wagmi';
+import { useAccount, useSignTypedData } from 'wagmi';
 import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
 import { useConfig } from "wagmi";
 import UpdateStakes from "./update-stakes";
 import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
-import { isAddress, getAddress } from "viem";
+import { isAddress, getAddress, parseEther, toHex } from "viem";
 import AddLock from "./add-lock";
 import { AddLogFunction } from "../components/log-section";
+import { ETH } from "@/utils";
+// import { signTypedData } from '@wagmi/core'
 
 interface ResourceLockModeProps {
   addLog: AddLogFunction;
@@ -22,14 +24,82 @@ interface TransferFundsProps {
 
 function TransferFunds({ addLog, disabled }: TransferFundsProps) {
   const [amount, setAmount] = useState<string>("0.0000000123");
-  const [recipient, setRecipient] = useState<string>("");
+  const [recipient, setRecipient] = useState<string>("0x77d1f68C3C924cFD4732e64E93AEBEA836797485");
   const [selectedChain, setSelectedChain] = useState<typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia>(sepolia);
   const chains = [baseSepolia, sepolia, arbitrumSepolia];
   const [isLoading, setIsLoading] = useState(false);
+  const config = useConfig();
+  const { isConnected, address } = useAccount();
+  const { signTypedDataAsync } = useSignTypedData();
 
   const handleTransfer = async () => {
+    if (!address) return;
     // Prepare allowance
-    // Sponsor transaction
+    const magicSpend = new MagicSpend(config, {
+      onRequest: (method, params) => {
+        addLog("request", { method, params });
+      },
+      onResponse: (method, params, result) => {
+        addLog("response", { result });
+      },
+    });
+
+    magicSpend.setChainId(selectedChain.id);
+
+    const recipientAddress = getAddress(recipient);
+
+    const allowance = await magicSpend.prepareAllowance({
+      type: "pimlico_lock",
+      data: {
+        account: address,
+        token: ETH,
+        amount: toHex(parseEther(amount)),
+        recipient: recipientAddress,
+      }
+    });
+
+    const signature = await signTypedDataAsync({
+      domain: { 
+        name: 'Pimlico Lock', 
+        chainId: selectedChain.id,
+        verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC', 
+        version: '1', 
+      },
+      types: {
+        AssetAllowance: [
+          { name: "token", type: "address" },
+          { name: "amount", type: "uint128" },
+          { name: "chainId", type: "uint128" },
+        ],
+        Allowance: [
+          { name: "account", type: "address" },
+          { name: "assets", type: "AssetAllowance[]" },
+          { name: "validUntil", type: "uint48" },
+          { name: "validAfter", type: "uint48" },
+          { name: "salt", type: "uint48" },
+          { name: "version", type: "uint32" },
+          { name: "metadata", type: "bytes" },
+        ]
+      },
+      primaryType: "Allowance",
+      message: {
+        account: allowance.account,
+        assets: allowance.assets,
+        validUntil: Number(allowance.validUntil),
+        validAfter: Number(allowance.validAfter),
+        salt: Number(allowance.salt),
+        version: Number(allowance.version),
+        metadata: allowance.metadata,
+      },
+    });
+
+    const withdrawal = await magicSpend.sponsorWithdrawal({
+      type: "pimlico_lock",
+      data: {
+        allowance,
+        signature,
+      }
+    });
   }
 
   return (

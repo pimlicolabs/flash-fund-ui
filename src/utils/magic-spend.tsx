@@ -51,7 +51,8 @@ export type MagicSpendAllowance = {
 	validUntil: bigint;
 	validAfter: bigint;
 	salt: bigint;
-	operator: Address;
+	version: bigint;
+	metadata: Hex;
 };
 
 export type PimlicoMagicSpendStake = {
@@ -71,6 +72,14 @@ export type SponsorWithdrawalCreditParams = {
 		token: Address;
 		recipient: Address;
 		amount: string;
+		signature: Hex;
+	};
+};
+
+export type SponsorWithdrawalPimlicoLockParams = {
+	type: "pimlico_lock";
+	data: {
+		allowance: MagicSpendAllowance;
 		signature: Hex;
 	};
 };
@@ -99,11 +108,17 @@ export type PimlicoMagicSpendSchema = [
 		Method: "pimlico_getMagicSpendStakes";
 	},
 	{
-		Parameters: {
-			account: Address;
-			token: Address;
-			amount: string;
-		}[];
+		Parameters: [
+			{
+				type: "pimlico_lock",
+				data: {
+					account: Address;
+					token: Address;
+					amount: string;
+					recipient: Address;
+				}
+			}
+		];
 		ReturnType: MagicSpendAllowance;
 		Method: "pimlico_prepareMagicSpendAllowance";
 	},
@@ -121,7 +136,7 @@ export type PimlicoMagicSpendSchema = [
 		Method: "pimlico_grantMagicSpendAllowance";
 	},
 	{
-		Parameters: [SponsorWithdrawalCreditParams, null];
+		Parameters: [SponsorWithdrawalCreditParams | SponsorWithdrawalPimlicoLockParams, null];
 		ReturnType: [Address, Hex];
 		Method: "pimlico_sponsorMagicSpendWithdrawal";
 	},
@@ -136,9 +151,13 @@ export type PimlicoMagicSpendSchema = [
 ];
 
 export type PimlicoMagicSpendPrepareAllowanceParams = {
-	account: Address;
-	token: Address;
-	amount: string;
+	type: "pimlico_lock";
+	data: {
+		account: Address;
+		token: Address;
+		amount: string;
+		recipient: Address;
+	};
 };
 
 export type MagicSpendBalance = {
@@ -239,9 +258,8 @@ export class MagicSpend {
 		this.pimlicoApiUrl = pimlicoApiUrl;
 	}
 
-	async setChainId(chainId: number) {
+	setChainId(chainId: number) {
 		this.chainId = chainId;
-		console.log("setChainId", this.chainId);
 	}
 
 	private getClient(): Client<
@@ -311,19 +329,12 @@ export class MagicSpend {
 		});
 	}
 
-	async sponsorWithdrawal({
-		type,
-		data
-	}: SponsorWithdrawalCreditParams): Promise<MagicSpendSponsorWithdrawalResponse> {
+	async sponsorWithdrawal(
+		params: SponsorWithdrawalCreditParams | SponsorWithdrawalPimlicoLockParams
+	): Promise<MagicSpendSponsorWithdrawalResponse> {
 		return this.getClient().request({
 			method: "pimlico_sponsorMagicSpendWithdrawal",
-			params: [
-				{
-					type,
-					data,
-				},
-				null,
-			],
+			params: [params, null],
 		});
 	}
 }
