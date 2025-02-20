@@ -95,6 +95,15 @@ export type GetStakesParams = {
 export const MAGIC_SPEND_ETH: Address =
 	"0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
+export type PimlicoMagicSpendStakeParams = {
+	type: "pimlico_lock";
+	data: {
+		token: Address;
+		amount: string;
+		unstakeDelaySec: string;
+	};
+};
+
 export type PimlicoMagicSpendSchema = [
 	{
 		Parameters: [
@@ -107,6 +116,11 @@ export type PimlicoMagicSpendSchema = [
 		];
 		ReturnType: PimlicoMagicSpendStake[];
 		Method: "pimlico_getMagicSpendStakes";
+	},
+	{
+		Parameters: [PimlicoMagicSpendStakeParams];
+		ReturnType: [Address, Hex];
+		Method: "pimlico_prepareMagicSpendStake";
 	},
 	{
 		Parameters: [
@@ -337,6 +351,13 @@ export class MagicSpend {
 		return this.getClient().request({
 			method: "pimlico_sponsorMagicSpendWithdrawal",
 			params: [params, null],
+		});
+	}
+
+	async prepareStake(params: PimlicoMagicSpendStakeParams): Promise<[Address, Hex]> {
+		return this.getClient().request({
+			method: "pimlico_prepareMagicSpendStake",
+			params: [params],
 		});
 	}
 }

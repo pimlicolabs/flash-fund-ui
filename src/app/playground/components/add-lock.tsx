@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount, useBalance, useWriteContract } from "wagmi";
+import { useAccount, useBalance, useConfig, useSendTransaction, useWriteContract } from "wagmi";
 import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
-import { Chain, formatEther, parseEther } from "viem";
+import { Chain, formatEther, parseEther, toHex } from "viem";
 import { clipDecimals } from "@/utils";
 import { toast } from "react-toastify";
 import { MagicSpendStakeManagerAbi } from "@/abi/MagicSpendStakeManager";
 import { ETH } from "@/utils";
 import { AddLogFunction } from "../components/log-section";
 import NetworkSelector, { ENABLED_CHAINS } from "./network-selector";
+import { MagicSpend } from "@/utils/magic-spend";
+import { sendTransaction } from "viem/actions";
 
 interface AddLockProps {
 	addLog: AddLogFunction;
@@ -21,49 +23,19 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 	const [selectedChain, setSelectedChain] = useState<Chain>(ENABLED_CHAINS[0]);
 	const [amount, setAmount] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
+	const config = useConfig();
+	const { sendTransactionAsync } = useSendTransaction();
 
 	const { data: balance } = useBalance({
 		address,
 		chainId: selectedChain.id,
 	});
 
-	const { writeContract, data: hash } = useWriteContract();
-
 	const handleSetMax = () => {
 		if (balance) {
 			setAmount(formatEther(balance.value));
 		}
 	};
-
-	useEffect(() => {
-		if (hash) {
-			const txUrl = `${selectedChain.blockExplorers?.default.url}/tx/${hash}`;
-
-			addLog("debug", {
-				hash,
-				txUrl,
-			});
-
-			toast.success(
-				<div>
-					🔒 Lock creation submitted!
-					<br />
-					<a
-						href={txUrl}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="text-purple-500 hover:text-purple-700"
-					>
-						View on Explorer
-					</a>
-				</div>,
-				{
-					position: "bottom-right",
-					autoClose: 5000,
-				},
-			);
-		}
-	}, [hash]);
 
 	const handleCreateLock = async () => {
 		if (!amount || !address) return;
@@ -72,23 +44,65 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 		try {
 			const unstakeDelaySec = 86400; // 1 day in seconds
 
-			addLog("request", {
-				method: "addStake",
-				params: {
-					token: ETH,
-					amount: parseEther(amount),
-					unstakeDelaySec,
+			const magicSpend = new MagicSpend(config, {
+				onRequest: (method, params) => {
+					addLog("request", {
+						method,
+						params,
+					});
+				},
+				onResponse: (method, params, result) => {
+					addLog("response", {
+						result,
+					});
 				},
 			});
 
-			writeContract({
-				address: "0x71aC00C71A5c3326707cEe1474e802323B5CDb7F",
-				abi: MagicSpendStakeManagerAbi,
-				functionName: "addStake",
-				args: [ETH, parseEther(amount), unstakeDelaySec],
+			magicSpend.setChainId(selectedChain.id);
+
+			const [stakeManager, calldata] = await magicSpend.prepareStake({
+				type: "pimlico_lock",
+				data: {
+					token: ETH,
+					amount: toHex(parseEther(amount)),
+					unstakeDelaySec: toHex(unstakeDelaySec),
+				},
+			});
+
+			const hash = await sendTransactionAsync({
+				data: calldata,
+				to: stakeManager,
 				value: parseEther(amount),
 				chainId: selectedChain.id,
 			});
+
+			if (hash) {
+				const txUrl = `${selectedChain.blockExplorers?.default.url}/tx/${hash}`;
+
+				addLog("debug", {
+					hash,
+					txUrl,
+				});
+
+				toast.success(
+					<div>
+						🔒 Lock creation submitted!
+						<br />
+						<a
+							href={txUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-purple-500 hover:text-purple-700"
+						>
+							View on Explorer
+						</a>
+					</div>,
+					{
+						position: "bottom-right",
+						autoClose: 5000,
+					},
+				);
+			}
 		} catch (error) {
 			console.error("Lock creation error:", error);
 			addLog("error", { error: String(error) });
