@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount, useBalance, useConfig, useSendTransaction, useWriteContract } from "wagmi";
+import {
+	useAccount,
+	useBalance,
+	useConfig,
+	useSendTransaction,
+	useWriteContract,
+} from "wagmi";
 import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
 import { Chain, formatEther, parseEther, toHex } from "viem";
 import { clipDecimals } from "@/utils";

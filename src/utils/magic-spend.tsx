@@ -354,7 +354,9 @@ export class MagicSpend {
 		});
 	}
 
-	async prepareStake(params: PimlicoMagicSpendStakeParams): Promise<[Address, Hex]> {
+	async prepareStake(
+		params: PimlicoMagicSpendStakeParams,
+	): Promise<[Address, Hex]> {
 		return this.getClient().request({
 			method: "pimlico_prepareMagicSpendStake",
 			params: [params],

@@ -7,7 +7,7 @@ export default function CreditPage() {
 	const { addLog, LogComponent } = LogSection();
 
 	return (
-		<div className="flex">
+		<div className="flex flex h-[calc(100vh-73px)]">
 			{/* Log Section */}
 			{LogComponent}
 

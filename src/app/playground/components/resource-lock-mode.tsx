@@ -12,6 +12,8 @@ import AddLock from "./add-lock";
 import { AddLogFunction } from "../components/log-section";
 import { ETH } from "@/utils";
 import NetworkSelector, { ENABLED_CHAINS } from "./network-selector";
+import { sendUserOperation } from "@/utils/user-operation";
+import { toast } from "react-toastify";
 // import { signTypedData } from '@wagmi/core'
 
 interface ResourceLockModeProps {
@@ -102,6 +104,34 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 				signature,
 			},
 		});
+
+		const [withdrawalManagerAddress, withdrawalCallData] = withdrawal;
+
+		const receipt = await sendUserOperation(
+			selectedChain,
+			withdrawalManagerAddress,
+			withdrawalCallData,
+			addLog,
+		);
+
+		toast.success(
+			<div>
+				🦄 Transfer successful!
+				<br />
+				<a
+					href={`${selectedChain.blockExplorers?.default.url}/tx/${receipt.receipt.transactionHash}`}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="text-purple-500 hover:text-purple-700"
+				>
+					View on Explorer
+				</a>
+			</div>,
+			{
+				position: "bottom-right",
+				autoClose: 5000,
+			},
+		);
 	};
 
 	return (

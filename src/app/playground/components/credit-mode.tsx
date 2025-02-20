@@ -22,6 +22,7 @@ import { getPimlicoUrl } from "@/utils";
 import { MagicSpend } from "@/utils/magic-spend";
 import { useConfig } from "wagmi";
 import { AddLogFunction } from "../components/log-section";
+import { sendUserOperation } from "@/utils/user-operation";
 
 const ETH_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 // This is a dummy private key for testing - DO NOT use in production
@@ -82,71 +83,12 @@ export default function CreditMode({ addLog }: CreditModeProps) {
 				withdrawalCallData,
 			});
 
-			const publicClient = createPublicClient({
-				chain: selectedChain,
-				transport: http(),
-			});
-
-			const paymasterClient = createPimlicoClient({
-				transport: http(getPimlicoUrl(selectedChain.id)),
-				entryPoint: {
-					address: entryPoint07Address,
-					version: "0.7",
-				},
-			});
-
-			const dummyAccount = privateKeyToAccount(DUMMY_KEY);
-
-			const safeAccount = await toSafeSmartAccount({
-				client: publicClient,
-				entryPoint: {
-					address: entryPoint07Address,
-					version: "0.7",
-				},
-				owners: [dummyAccount],
-				version: "1.4.1",
-			});
-
-			const smartAccountClient = createSmartAccountClient({
-				account: safeAccount,
-				chain: selectedChain,
-				paymaster: paymasterClient,
-				bundlerTransport: http(getPimlicoUrl(selectedChain.id)),
-				userOperation: {
-					estimateFeesPerGas: async () =>
-						(await paymasterClient.getUserOperationGasPrice()).fast,
-				},
-			});
-
-			addLog("debug", { message: "Sending user operation..." });
-
-			const userOperation = await smartAccountClient.prepareUserOperation({
-				calls: [
-					{
-						to: withdrawalManagerAddress,
-						value: parseEther("0"),
-						data: withdrawalCallData,
-					},
-				],
-			});
-
-			userOperation.signature =
-				await safeAccount.signUserOperation(userOperation);
-
-			addLog("debug", {
-				message: "User operation prepared",
-				userOperation,
-			});
-
-			const userOpHash =
-				await smartAccountClient.sendUserOperation(userOperation);
-
-			addLog("debug", { message: "User operation sent", userOpHash });
-
-			addLog("info", { message: "Waiting for confirmation..." });
-			const receipt = await paymasterClient.waitForUserOperationReceipt({
-				hash: userOpHash,
-			});
+			const receipt = await sendUserOperation(
+				selectedChain,
+				withdrawalManagerAddress,
+				withdrawalCallData,
+				addLog,
+			);
 
 			addLog("success", {
 				message: "Transfer confirmed!",
