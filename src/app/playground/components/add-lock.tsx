@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useAccount, useBalance, useWriteContract } from 'wagmi';
 import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
-import { formatEther, parseEther } from "viem";
+import { Chain, formatEther, parseEther } from "viem";
 import { clipDecimals } from "@/utils";
 import { toast } from "react-toastify";
 import { MagicSpendStakeManagerAbi } from "@/abi/MagicSpendStakeManager";
 import { ETH } from "@/utils";
 import { AddLogFunction } from "../components/log-section";
+import NetworkSelector, { ENABLED_CHAINS } from "./network-selector";
 
 interface AddLockProps {
   addLog: AddLogFunction;
@@ -17,8 +18,7 @@ interface AddLockProps {
 
 export default function AddLock({ addLog, disabled }: AddLockProps) {
   const { isConnected, address } = useAccount();
-  const chains = [baseSepolia, sepolia, arbitrumSepolia];
-  const [selectedChain, setSelectedChain] = useState(chains[0]);
+  const [selectedChain, setSelectedChain] = useState<Chain>(ENABLED_CHAINS[0]);
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
@@ -110,24 +110,7 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
       </p>
 
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">Select Network</label>
-          <select
-            value={selectedChain.id}
-            onChange={(e) => {
-              const chain = chains.find((c) => c.id === Number(e.target.value));
-              if (chain) setSelectedChain(chain);
-            }}
-            className="w-full p-2 border rounded"
-            disabled={disabled}
-          >
-            {chains.map(chain => (
-              <option key={chain.id} value={chain.id}>
-                {chain.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <NetworkSelector onChange={(chain) => setSelectedChain(chain)}/>
 
         <div>
           <label className="block text-sm font-medium mb-2">Resource Lock</label>

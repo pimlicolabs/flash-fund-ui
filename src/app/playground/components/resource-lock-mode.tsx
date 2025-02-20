@@ -7,10 +7,11 @@ import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
 import { useConfig } from "wagmi";
 import UpdateStakes from "./update-stakes";
 import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
-import { isAddress, getAddress, parseEther, toHex } from "viem";
+import { isAddress, getAddress, parseEther, toHex, Chain } from "viem";
 import AddLock from "./add-lock";
 import { AddLogFunction } from "../components/log-section";
 import { ETH } from "@/utils";
+import NetworkSelector, { ENABLED_CHAINS } from "./network-selector";
 // import { signTypedData } from '@wagmi/core'
 
 interface ResourceLockModeProps {
@@ -25,8 +26,7 @@ interface TransferFundsProps {
 function TransferFunds({ addLog, disabled }: TransferFundsProps) {
   const [amount, setAmount] = useState<string>("0.0000000123");
   const [recipient, setRecipient] = useState<string>("0x77d1f68C3C924cFD4732e64E93AEBEA836797485");
-  const [selectedChain, setSelectedChain] = useState<typeof sepolia | typeof baseSepolia | typeof arbitrumSepolia>(sepolia);
-  const chains = [baseSepolia, sepolia, arbitrumSepolia];
+  const [selectedChain, setSelectedChain] = useState<Chain>(ENABLED_CHAINS[0]);
   const [isLoading, setIsLoading] = useState(false);
   const config = useConfig();
   const { isConnected, address } = useAccount();
@@ -105,24 +105,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Transfer Funds</h2>
-      <div>
-        <label className="block text-sm font-medium mb-2">Chain</label>
-        <select
-          value={selectedChain.id}
-          onChange={(e) => {
-            const chain = chains.find((c) => c.id === Number(e.target.value));
-            if (chain) setSelectedChain(chain);
-          }}
-          className="w-full p-2 border rounded"
-          disabled={disabled}
-        >
-          {chains.map((chain) => (
-            <option key={chain.id} value={chain.id}>
-              {chain.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <NetworkSelector onChange={(chain) => setSelectedChain(chain)}/>
 
       <div>
         <label className="block text-sm font-medium mb-2">Amount (ETH)</label>
