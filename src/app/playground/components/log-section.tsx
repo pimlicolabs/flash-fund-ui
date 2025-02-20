@@ -8,6 +8,8 @@ interface LogEntry {
   data: any;
 }
 
+export type AddLogFunction = (type: LogEntry["type"], data: any) => void;
+
 function bigIntReplacer(_key: string, value: any): any {
   return typeof value === 'bigint' ? value.toString() : value;
 }

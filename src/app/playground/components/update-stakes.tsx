@@ -3,14 +3,15 @@ import { useAccount, useConfig } from 'wagmi';
 import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
 import { arbitrumSepolia, baseSepolia, sepolia } from "viem/chains";
 import { formatEther } from "viem";
+import { AddLogFunction } from "../components/log-section";
 
 interface UpdateStakesProps {
-  addLog: (type: "request" | "response", data: any) => void;
+  addLog: AddLogFunction;
   stakes: PimlicoMagicSpendStake[];
   onStakesUpdate: (stakes: PimlicoMagicSpendStake[]) => void;
 }
 
-export default function UpdateStakes({ addLog, stakes, onStakesUpdate }: UpdateStakesProps) {
+export default function UpdateLocks({ addLog, stakes: locks, onStakesUpdate: onLocksUpdate }: UpdateStakesProps) {
   const { isConnected, address } = useAccount();
   const config = useConfig();
   const chains = [baseSepolia, sepolia, arbitrumSepolia];
@@ -36,14 +37,14 @@ export default function UpdateStakes({ addLog, stakes, onStakesUpdate }: UpdateS
           account: address,
         }
       });
-      onStakesUpdate(newStakes);
+      onLocksUpdate(newStakes);
     } catch (error) {
       console.error("Error fetching stakes:", error);
       addLog("response", { error: String(error) });
     } finally {
       setLoading(false);
     }
-  }, [address, isConnected, config, addLog, onStakesUpdate]);
+  }, [address, isConnected, config, addLog, onLocksUpdate]);
 
   useEffect(() => {
     const interval = setInterval(updateStakes, 30000); // Update every 30 seconds
@@ -57,7 +58,7 @@ export default function UpdateStakes({ addLog, stakes, onStakesUpdate }: UpdateS
   if (!isConnected) return null;
 
   // Sort stakes by USD value (testnet stakes at the end)
-  const sortedStakes = [...stakes].sort((a, b) => {
+  const sortedStakes = [...locks].sort((a, b) => {
     if (a.testnet && !b.testnet) return 1;
     if (!a.testnet && b.testnet) return -1;
     return Number(b.usdValue - a.usdValue);
@@ -66,12 +67,12 @@ export default function UpdateStakes({ addLog, stakes, onStakesUpdate }: UpdateS
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Your Stakes</h2>
+        <h2 className="text-xl font-semibold">Your Locks</h2>
         <p className="text-gray-600 mb-4">
-          Below are your active stakes across all supported networks.
+          Below are your active locks across all supported networks.
         </p>
         
-        {stakes.length > 0 ? (
+        {locks.length > 0 ? (
           <div className="relative overflow-x-auto" style={{ maxHeight: '320px' }}>
             <table className="w-full text-sm text-left text-gray-500">
               <thead className="text-xs uppercase bg-gray-50">
@@ -133,24 +134,18 @@ export default function UpdateStakes({ addLog, stakes, onStakesUpdate }: UpdateS
           </div>
         ) : (
           <div className="bg-gray-50 rounded-lg p-8 text-center">
-            <p className="text-gray-600">No stakes found yet. Your stakes will appear here once you create them.</p>
+            <p className="text-gray-600">No locks found yet. Your locks will appear here once you create them.</p>
           </div>
         )}
       </div>
 
-      <div className="flex justify-end gap-2">
-        <button
-          onClick={() => {/* TODO: Add stake handler */}}
-          className="px-3 py-1.5 text-sm bg-white border border-purple-500 text-purple-500 rounded hover:bg-purple-50"
-        >
-          Add Stake
-        </button>
+      <div className="flex justify-end">
         <button
           onClick={updateStakes}
           className="px-3 py-1.5 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
           disabled={loading}
         >
-          {loading ? "Updating..." : "Update Stakes"}
+          {loading ? "Updating..." : "Update Locks"}
         </button>
       </div>
     </div>

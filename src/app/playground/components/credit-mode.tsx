@@ -21,6 +21,7 @@ import { toast } from "react-toastify";
 import { getPimlicoUrl } from "@/utils";
 import { MagicSpend } from "@/utils/magic-spend";
 import { useConfig } from "wagmi";
+import { AddLogFunction } from "../components/log-section";
 
 const ETH_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 // This is a dummy private key for testing - DO NOT use in production
@@ -31,7 +32,7 @@ if (!process.env.NEXT_PUBLIC_PIMLICO_API_KEY) {
 }
 
 interface CreditModeProps {
-  addLog: (type: "request" | "response" | "info" | "error" | "debug" | "success", data: any) => void;
+  addLog: AddLogFunction;
 }
 
 export default function CreditMode({ addLog }: CreditModeProps) {

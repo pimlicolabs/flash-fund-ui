@@ -8,13 +8,15 @@ import { useConfig } from "wagmi";
 import UpdateStakes from "./update-stakes";
 import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
 import { isAddress, getAddress } from "viem";
+import AddLock from "./add-lock";
+import { AddLogFunction } from "../components/log-section";
 
 interface ResourceLockModeProps {
-  addLog: (type: "request" | "response", data: any) => void;
+  addLog: AddLogFunction;
 }
 
 interface TransferFundsProps {
-  addLog: (type: "request" | "response", data: any) => void;
+  addLog: AddLogFunction;
   disabled?: boolean;
 }
 
@@ -32,7 +34,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold mb-4">Transfer Funds</h2>
+      <h2 className="text-xl font-semibold">Transfer Funds</h2>
       <div>
         <label className="block text-sm font-medium mb-2">Chain</label>
         <select
@@ -83,13 +85,15 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
         />
       </div>
 
-      <button
-        onClick={() => {}}
-        disabled={isLoading || !isAddress(recipient) || !amount || disabled}
-        className="w-full py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
-      >
-        {isLoading ? "Processing..." : "Send funds"}
-      </button>
+      <div className="flex justify-end">
+        <button
+          onClick={handleTransfer}
+          disabled={isLoading || !isAddress(recipient) || !amount || disabled}
+          className="px-3 py-1.5 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
+        >
+          {isLoading ? "Processing..." : "Send Funds"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -139,6 +143,10 @@ export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
 
   return (
     <div className="space-y-6">      
+      <AddLock 
+        addLog={addLog}
+        disabled={loading}
+      />
       <UpdateStakes 
         addLog={addLog} 
         stakes={stakes}
