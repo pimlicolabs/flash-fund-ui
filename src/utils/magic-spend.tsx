@@ -111,14 +111,14 @@ export type PimlicoMagicSpendSchema = [
 	{
 		Parameters: [
 			{
-				type: "pimlico_lock",
+				type: "pimlico_lock";
 				data: {
 					account: Address;
 					token: Address;
 					amount: string;
 					recipient: Address;
-				}
-			}
+				};
+			},
 		];
 		ReturnType: MagicSpendAllowance;
 		Method: "pimlico_prepareMagicSpendAllowance";
@@ -137,7 +137,10 @@ export type PimlicoMagicSpendSchema = [
 		Method: "pimlico_grantMagicSpendAllowance";
 	},
 	{
-		Parameters: [SponsorWithdrawalCreditParams | SponsorWithdrawalPimlicoLockParams, null];
+		Parameters: [
+			SponsorWithdrawalCreditParams | SponsorWithdrawalPimlicoLockParams,
+			null,
+		];
 		ReturnType: [Address, Hex];
 		Method: "pimlico_sponsorMagicSpendWithdrawal";
 	},
@@ -175,7 +178,7 @@ export type LogHooks = {
 
 function createMagicSpendTransport(
 	url: string,
-	config: HttpTransportConfig & { logHooks?: LogHooks }
+	config: HttpTransportConfig & { logHooks?: LogHooks },
 ): HttpTransport {
 	const {
 		fetchOptions,
@@ -197,7 +200,7 @@ function createMagicSpendTransport(
 			{
 				key,
 				name,
-                async request({ method, params }) {
+				async request({ method, params }) {
 					const body = { method, params: params || [] };
 					const httpClient = getHttpRpcClient(url);
 
@@ -233,7 +236,7 @@ function createMagicSpendTransport(
 			{
 				fetchOptions,
 				url,
-			}
+			},
 		);
 	};
 }
@@ -254,7 +257,7 @@ export class MagicSpend {
 			throw new Error("NEXT_PUBLIC_PIMLICO_API_URL is not set");
 		}
 
-		console.log(pimlicoApiUrl)
+		console.log(pimlicoApiUrl);
 
 		this.pimlicoApiUrl = pimlicoApiUrl;
 	}
@@ -298,10 +301,7 @@ export class MagicSpend {
 		);
 	}
 
-	async getStakes({
-		type,
-		data,
-	}: GetStakesParams) {
+	async getStakes({ type, data }: GetStakesParams) {
 		const stakes = await this.getClient().request({
 			method: "pimlico_getMagicSpendStakes",
 			params: [
@@ -332,7 +332,7 @@ export class MagicSpend {
 	}
 
 	async sponsorWithdrawal(
-		params: SponsorWithdrawalCreditParams | SponsorWithdrawalPimlicoLockParams
+		params: SponsorWithdrawalCreditParams | SponsorWithdrawalPimlicoLockParams,
 	): Promise<MagicSpendSponsorWithdrawalResponse> {
 		return this.getClient().request({
 			method: "pimlico_sponsorMagicSpendWithdrawal",

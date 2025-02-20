@@ -12,8 +12,9 @@ export default function Home() {
 			<div className="mb-8">
 				<h2 className="text-2xl font-bold mb-4">Welcome to Magic Spend</h2>
 				<p className="text-gray-600 mb-6">
-					Magic Spend is a powerful tool for managing token spending and resource access. 
-					Experiment with different modes in our interactive playground to see how they work.
+					Magic Spend is a powerful tool for managing token spending and
+					resource access. Experiment with different modes in our interactive
+					playground to see how they work.
 				</p>
 
 				<div className="mb-8">
