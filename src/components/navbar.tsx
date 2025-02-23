@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const ExternalLinkIcon = () => (
 	<svg
@@ -68,6 +69,17 @@ const NavBar = () => {
 					Schedule a call
 					<ExternalLinkIcon />
 				</Link>
+			</div>
+
+			<div className="flex items-center space-x-4">
+				<ConnectButton 
+					showBalance={false}
+					chainStatus="icon"
+					accountStatus={{
+						smallScreen: 'avatar',
+						largeScreen: 'full',
+					}}
+				/>
 			</div>
 		</div>
 	);
