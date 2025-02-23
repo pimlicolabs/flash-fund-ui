@@ -3,13 +3,13 @@
 import * as React from "react";
 import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import { sepolia, baseSepolia, arbitrumSepolia } from "wagmi/chains";
+import { sepolia, baseSepolia, arbitrumSepolia, base } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
 const config = getDefaultConfig({
 	appName: "Pimlico MagicSpend++ Playground",
 	projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
-	chains: [sepolia, baseSepolia, arbitrumSepolia],
+	chains: [sepolia, baseSepolia, arbitrumSepolia, base],
 	ssr: true,
 });
 

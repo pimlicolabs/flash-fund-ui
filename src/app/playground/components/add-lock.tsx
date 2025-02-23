@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
 	useAccount,
 	useBalance,
+	useChains,
 	useConfig,
 	useSendTransaction,
 	useWriteContract,
@@ -31,6 +32,8 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const config = useConfig();
 	const { sendTransactionAsync } = useSendTransaction();
+	const [resourceLock, setResourceLock] = useState<"pimlico" | "onebalance">("pimlico");
+	const chains = useChains()
 
 	const { data: balance } = useBalance({
 		address,
@@ -66,19 +69,30 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 
 			magicSpend.setChainId(selectedChain.id);
 
-			const [stakeManager, calldata] = await magicSpend.prepareStake({
-				type: "pimlico_lock",
-				data: {
-					token: ETH,
-					amount: toHex(parseEther(amount)),
-					unstakeDelaySec: toHex(unstakeDelaySec),
-				},
-			});
+			const [target, calldata, value] = await magicSpend.prepareStake(
+				resourceLock === "pimlico" 
+					? {
+						type: "pimlico_lock",
+						data: {
+							token: ETH,
+							amount: toHex(parseEther(amount)),
+							unstakeDelaySec: toHex(unstakeDelaySec),
+						},
+					}
+					: {
+						type: "onebalance",
+						data: {
+							token: ETH,
+							amount: toHex(parseEther(amount)),
+							account: address,
+						},
+					}
+			);
 
 			const hash = await sendTransactionAsync({
 				data: calldata,
-				to: stakeManager,
-				value: parseEther(amount),
+				to: target,
+				value: BigInt(value),
 				chainId: selectedChain.id,
 			});
 
@@ -139,8 +153,14 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 					<label className="block text-sm font-medium mb-2">
 						Resource Lock
 					</label>
-					<select className="w-full p-2 border rounded" disabled={disabled}>
+					<select 
+						className="w-full p-2 border rounded" 
+						disabled={disabled}
+						value={resourceLock}
+						onChange={(e) => setResourceLock(e.target.value as "pimlico" | "onebalance")}
+					>
 						<option value="pimlico">Pimlico Lock</option>
+						<option value="onebalance">One Balance</option>
 					</select>
 				</div>
 

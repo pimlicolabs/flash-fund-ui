@@ -205,11 +205,8 @@ export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
 				},
 			});
 
-			const stakes = await magicSpend.getStakes({
-				type: "pimlico_lock",
-				data: {
-					account: address,
-				},
+			const { stakes } = await magicSpend.getStakes({
+				account: address,
 			});
 			setStakes(stakes);
 		} catch (error) {

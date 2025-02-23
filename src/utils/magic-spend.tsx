@@ -56,15 +56,14 @@ export type MagicSpendAllowance = {
 };
 
 export type PimlicoMagicSpendStake = {
-	chainId: number;
-	token: Address;
-	amount: bigint;
-	unstakeDelaySec: bigint;
-	withdrawTime: Date;
-	staked: boolean;
-	testnet: boolean;
-	usdValue: bigint;
-	pending: bigint;
+    type: "pimlico_lock" | "onebalance";
+    chainId: number;
+    token: Address;
+    amount: bigint;
+    withdrawTime?: Date;
+    usdValue: bigint;
+    testnet: boolean;
+    pending?: bigint;
 };
 
 export type SponsorWithdrawalCreditParams = {
@@ -86,10 +85,7 @@ export type SponsorWithdrawalPimlicoLockParams = {
 };
 
 export type GetStakesParams = {
-	type: "pimlico_lock";
-	data: {
-		account: Address;
-	};
+	account: Address;
 };
 
 export const MAGIC_SPEND_ETH: Address =
@@ -102,19 +98,26 @@ export type PimlicoMagicSpendStakeParams = {
 		amount: string;
 		unstakeDelaySec: string;
 	};
+} | {
+	type: "onebalance";
+	data: {
+		token: Address;
+		amount: string;
+		account: Address;
+	};
 };
 
 export type PimlicoMagicSpendSchema = [
 	{
 		Parameters: [
 			{
-				type: "pimlico_lock";
-				data: {
-					account: Address;
-				};
+				account: Address;
 			},
 		];
-		ReturnType: PimlicoMagicSpendStake[];
+		ReturnType: {
+			usdValue: bigint;
+			stakes: PimlicoMagicSpendStake[]
+		};
 		Method: "pimlico_getMagicSpendStakes";
 	},
 	{
@@ -315,27 +318,30 @@ export class MagicSpend {
 		);
 	}
 
-	async getStakes({ type, data }: GetStakesParams) {
-		const stakes = await this.getClient().request({
+	async getStakes({ account }: GetStakesParams) {
+		const response = await this.getClient().request({
 			method: "pimlico_getMagicSpendStakes",
 			params: [
 				{
-					type,
-					data,
+					account,
 				},
 			],
 		});
 
-		return stakes.map((stake) => ({
+		const stakes = response.stakes.map((stake) => ({
 			...stake,
 			withdrawTime: new Date(Number(stake.withdrawTime)),
-			unstakeDelaySec: BigInt(stake.unstakeDelaySec),
 			amount: BigInt(stake.amount),
 			chainId: Number(stake.chainId),
 			testnet: stake.testnet,
 			usdValue: BigInt(stake.usdValue),
 			pending: BigInt(stake.pending || "0"),
 		}));
+
+		return {
+			usdValue: response.usdValue,
+			stakes,
+		};
 	}
 
 	async prepareAllowance(params: PimlicoMagicSpendPrepareAllowanceParams) {
@@ -356,7 +362,7 @@ export class MagicSpend {
 
 	async prepareStake(
 		params: PimlicoMagicSpendStakeParams,
-	): Promise<[Address, Hex]> {
+	): Promise<[Address, Hex, Hex]> {
 		return this.getClient().request({
 			method: "pimlico_prepareMagicSpendStake",
 			params: [params],

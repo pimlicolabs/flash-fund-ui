@@ -4,6 +4,7 @@ import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
 import { arbitrumSepolia, baseSepolia, sepolia } from "viem/chains";
 import { formatEther } from "viem";
 import { AddLogFunction } from "../components/log-section";
+import { ENABLED_CHAINS } from "./network-selector";
 
 interface UpdateStakesProps {
 	addLog: AddLogFunction;
@@ -18,7 +19,7 @@ export default function UpdateLocks({
 }: UpdateStakesProps) {
 	const { isConnected, address } = useAccount();
 	const config = useConfig();
-	const chains = [baseSepolia, sepolia, arbitrumSepolia];
+	const chains = ENABLED_CHAINS;
 	const [loading, setLoading] = useState(false);
 
 	const updateStakes = useCallback(async () => {
@@ -36,12 +37,9 @@ export default function UpdateLocks({
 			});
 
 			const newStakes = await magicSpend.getStakes({
-				type: "pimlico_lock",
-				data: {
-					account: address,
-				},
+				account: address,
 			});
-			onLocksUpdate(newStakes);
+			onLocksUpdate(newStakes.stakes);
 		} catch (error) {
 			console.error("Error fetching stakes:", error);
 			addLog("response", { error: String(error) });
@@ -50,10 +48,10 @@ export default function UpdateLocks({
 		}
 	}, [address, isConnected, config, addLog, onLocksUpdate]);
 
-	useEffect(() => {
-		const interval = setInterval(updateStakes, 30000); // Update every 30 seconds
-		return () => clearInterval(interval);
-	}, [updateStakes]);
+	// useEffect(() => {
+	// 	const interval = setInterval(updateStakes, 30000); // Update every 30 seconds
+	// 	return () => clearInterval(interval);
+	// }, [updateStakes]);
 
 	const getChainById = (chainId: number) => {
 		return chains.find((chain) => chain.id === chainId);
@@ -87,17 +85,14 @@ export default function UpdateLocks({
 									<th scope="col" className="px-6 py-3">
 										Network
 									</th>
+									<th scope="col" className="px-6 py-3">
+										Type
+									</th>
 									<th scope="col" className="px-6 py-3 text-right">
-										Locked / Pending
+										Amount
 									</th>
 									<th scope="col" className="px-6 py-3 text-right">
 										USD Value
-									</th>
-									<th scope="col" className="px-6 py-3 text-right">
-										Withdrawal Status
-									</th>
-									<th scope="col" className="px-6 py-3 text-right">
-										Status
 									</th>
 								</tr>
 							</thead>
@@ -108,25 +103,14 @@ export default function UpdateLocks({
 
 									const formatAmount = (amount: bigint) => {
 										const value = Number(formatEther(amount));
-										if (value === 0) return "0.00";
-										return value < 0.01 ? "<0.01" : value.toFixed(2);
+										if (value === 0) return "0";
+										return value < 0.001 ? "<0.001" : value.toFixed(3);
 									};
 
-									const lockedAmount = formatAmount(stake.amount);
-									const pendingAmount = formatAmount(stake.pending);
-
-									let withdrawalStatus = "-";
-									if (stake.withdrawTime && stake.withdrawTime.getTime() > 0) {
-										const timeLeft = stake.withdrawTime.getTime() - Date.now();
-										if (timeLeft > 0) {
-											const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
-											withdrawalStatus = `${hoursLeft}h until withdrawal`;
-										} else {
-											withdrawalStatus = "Ready to withdraw";
-										}
-									} else if (stake.unstakeDelaySec) {
-										withdrawalStatus = `${Number(stake.unstakeDelaySec) / 3600}h delay`;
-									}
+									const amount = stake.amount - (stake.pending || BigInt(0));
+									const formattedAmount = formatAmount(amount);
+									const formattedUsdValue = (Number(stake.usdValue) / 1_000_000)
+										.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})
 
 									return (
 										<tr
@@ -146,16 +130,14 @@ export default function UpdateLocks({
 													)}
 												</div>
 											</th>
-											<td className="px-6 py-4 text-right">{`${lockedAmount} / ${pendingAmount} ETH`}</td>
-											<td className="px-6 py-4 text-right">
-												{stake.testnet
-													? "-"
-													: `$${Number(formatEther(stake.usdValue)).toFixed(2)}`}
+											<td className="px-6 py-4">
+												<span className="capitalize">{stake.type.replace('_', ' ')}</span>
 											</td>
+											<td className="px-6 py-4 text-right">{`${formattedAmount} ETH`}</td>
 											<td className="px-6 py-4 text-right">
-												{withdrawalStatus}
+												{`$${formattedUsdValue}`}
 											</td>
-											<td className="px-6 py-4 text-right">
+											{/* <td className="px-6 py-4 text-right">
 												<span
 													className={`px-2 py-1 rounded text-xs ${
 														stake.staked
@@ -165,7 +147,7 @@ export default function UpdateLocks({
 												>
 													{stake.staked ? "Staked" : "Unstaked"}
 												</span>
-											</td>
+											</td> */}
 										</tr>
 									);
 								})}
