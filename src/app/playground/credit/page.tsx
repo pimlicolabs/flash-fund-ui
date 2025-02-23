@@ -18,10 +18,16 @@ export default function CreditPage() {
 
 					<div className="mb-8 p-4 bg-gray-50 rounded-lg">
 						<p className="text-gray-600">
-							Credit mode allows users to spend tokens they don't yet have,
-							similar to a credit card. Perfect for recurring payments and
-							subscriptions.
+							Credit mode simplifies token access by shifting liquidity management from users to developers. 
+							Developers can top up their balance through the Pimlico dashboard and instantly provide ETH 
+							to users on any supported chain using their API key. Perfect for demos and small-scale applications.
 						</p>
+						<ul className="mt-4 list-disc list-inside text-gray-600">
+							<li>Instant ETH provision on any supported chain</li>
+							<li>Developer-funded model with dashboard management</li>
+							<li>Webhook support for transaction monitoring</li>
+							<li>Currently supports ETH only</li>
+						</ul>
 					</div>
 
 					<div className="mb-8">
