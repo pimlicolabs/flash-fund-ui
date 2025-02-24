@@ -5,12 +5,17 @@ import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
 import { sepolia, baseSepolia, arbitrumSepolia, base, arbitrum, mainnet } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { http } from "wagmi";
 
 const config = getDefaultConfig({
 	appName: "Pimlico MagicSpend++ Playground",
 	projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
 	chains: [sepolia, baseSepolia, arbitrumSepolia, base, arbitrum, mainnet],
 	ssr: true,
+	transports: {
+		// Override transport for mainnet to use thirdweb RPC
+		[mainnet.id]: http('https://1.rpc.thirdweb.com'),
+	},
 });
 
 const queryClient = new QueryClient();
