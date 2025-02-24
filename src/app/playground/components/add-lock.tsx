@@ -140,8 +140,9 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 		<div className="space-y-6">
 			<h2 className="text-xl font-semibold">Add Lock</h2>
 			<p className="text-gray-600 mb-4">
-				Lock your ETH to become a bundler. Your locked ETH acts as collateral,
-				ensuring reliable transaction processing on the network.
+				Lock ETH to start using resource lock mode. Your locked ETH is summed across
+				different chains - for example, locking 0.5 ETH on Arbitrum and 0.1 ETH on
+				Base allows you to request withdrawals up to 0.6 ETH on Ethereum.
 			</p>
 
 			<div className="space-y-4">
