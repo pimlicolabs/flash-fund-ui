@@ -6,6 +6,7 @@ import { toSafeSmartAccount } from "permissionless/accounts";
 import { createSmartAccountClient } from "permissionless";
 import { getPimlicoUrl } from ".";
 import type { AddLogFunction } from "@/app/playground/components/log-section";
+import { mainnet } from "viem/chains";
 
 // This is a dummy private key for testing - DO NOT use in production
 const DUMMY_KEY =
@@ -19,7 +20,12 @@ export async function sendUserOperation(
 ) {
 	const publicClient = createPublicClient({
 		chain,
-		transport: http(),
+		transport: http(
+			// Use thirdweb RPC for mainnet, default for other chains
+			chain.id === mainnet.id 
+				? 'https://1.rpc.thirdweb.com'
+				: undefined
+		),
 	});
 
 	const paymasterClient = createPimlicoClient({
