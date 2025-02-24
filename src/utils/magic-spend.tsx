@@ -10,14 +10,13 @@ import {
 	type Transport,
 	type HttpTransport,
 	type HttpTransportConfig,
-	createClient,
 	createPublicClient,
 	createTransport,
 	RpcRequestError,
 	UrlRequiredError,
 } from "viem";
 import { sepolia } from "viem/chains";
-import { Config } from "wagmi";
+import type { Config } from "wagmi";
 import { getPimlicoUrl } from ".";
 import { getHttpRpcClient } from "viem/utils";
 
@@ -56,14 +55,14 @@ export type MagicSpendAllowance = {
 };
 
 export type PimlicoMagicSpendStake = {
-    type: "pimlico_lock" | "onebalance";
-    chainId: number;
-    token: Address;
-    amount: bigint;
-    withdrawTime?: Date;
-    usdValue: bigint;
-    testnet: boolean;
-    pending?: bigint;
+	type: "pimlico_lock" | "onebalance";
+	chainId: number;
+	token: Address;
+	amount: bigint;
+	withdrawTime?: Date;
+	usdValue: bigint;
+	testnet: boolean;
+	pending?: bigint;
 };
 
 export type SponsorWithdrawalCreditParams = {
@@ -91,21 +90,23 @@ export type GetStakesParams = {
 export const MAGIC_SPEND_ETH: Address =
 	"0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
-export type PimlicoMagicSpendStakeParams = {
-	type: "pimlico_lock";
-	data: {
-		token: Address;
-		amount: string;
-		unstakeDelaySec: string;
-	};
-} | {
-	type: "onebalance";
-	data: {
-		token: Address;
-		amount: string;
-		account: Address;
-	};
-};
+export type PimlicoMagicSpendStakeParams =
+	| {
+			type: "pimlico_lock";
+			data: {
+				token: Address;
+				amount: string;
+				unstakeDelaySec: string;
+			};
+	  }
+	| {
+			type: "onebalance";
+			data: {
+				token: Address;
+				amount: string;
+				account: Address;
+			};
+	  };
 
 export type PimlicoMagicSpendSchema = [
 	{
@@ -116,7 +117,7 @@ export type PimlicoMagicSpendSchema = [
 		];
 		ReturnType: {
 			usdValue: bigint;
-			stakes: PimlicoMagicSpendStake[]
+			stakes: PimlicoMagicSpendStake[];
 		};
 		Method: "pimlico_getMagicSpendStakes";
 	},

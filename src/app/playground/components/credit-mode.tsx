@@ -2,26 +2,17 @@
 
 import { useState } from "react";
 import {
-	Address,
+	type Address,
 	getAddress,
 	isAddress,
 	parseEther,
 	toHex,
-	createPublicClient,
-	http,
 } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
-import { createPimlicoClient } from "permissionless/clients/pimlico";
-import { entryPoint07Address } from "viem/account-abstraction";
-import { toSafeSmartAccount } from "permissionless/accounts";
-import { createSmartAccountClient } from "permissionless";
-import { MagicSpendWithdrawalManagerAbi } from "@/abi/MagicSpendWithdrawalManager";
 import { toast } from "react-toastify";
-import { getPimlicoUrl } from "@/utils";
 import { MagicSpend } from "@/utils/magic-spend";
 import { useConfig } from "wagmi";
-import { AddLogFunction } from "../components/log-section";
+import type { AddLogFunction } from "../components/log-section";
 import { sendUserOperation } from "@/utils/user-operation";
 
 const ETH_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";

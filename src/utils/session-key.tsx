@@ -1,4 +1,4 @@
-import { Hex, PrivateKeyAccount } from "viem";
+import type { Hex, PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { createStorage } from "wagmi";
 

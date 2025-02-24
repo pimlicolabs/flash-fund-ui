@@ -72,12 +72,12 @@ const NavBar = () => {
 			</div>
 
 			<div className="flex items-center space-x-4">
-				<ConnectButton 
+				<ConnectButton
 					showBalance={false}
 					chainStatus="icon"
 					accountStatus={{
-						smallScreen: 'avatar',
-						largeScreen: 'full',
+						smallScreen: "avatar",
+						largeScreen: "full",
 					}}
 				/>
 			</div>

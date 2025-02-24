@@ -1,11 +1,11 @@
-import { Chain, Address, Hex, createPublicClient, http } from "viem";
+import { type Chain, type Address, type Hex, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { toSafeSmartAccount } from "permissionless/accounts";
 import { createSmartAccountClient } from "permissionless";
 import { getPimlicoUrl } from ".";
-import { AddLogFunction } from "@/app/playground/components/log-section";
+import type { AddLogFunction } from "@/app/playground/components/log-section";
 
 // This is a dummy private key for testing - DO NOT use in production
 const DUMMY_KEY =

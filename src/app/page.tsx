@@ -1,10 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { pimlicoStorage } from "@/utils/storage";
-import { toast } from "react-toastify";
 
 export default function Home() {
 	return (
@@ -12,8 +7,9 @@ export default function Home() {
 			<div className="mb-8">
 				<h2 className="text-2xl font-bold mb-4">Welcome to Magic Spend</h2>
 				<p className="text-gray-600 mb-6">
-					Magic Spend solves liquidity fragmentation by enabling flexible token spending across multiple chains. 
-					If you have tokens spread across different chains and formats, Magic Spend allows you to instantly 
+					Magic Spend solves liquidity fragmentation by enabling flexible token
+					spending across multiple chains. If you have tokens spread across
+					different chains and formats, Magic Spend allows you to instantly
 					access their value while we handle the underlying token management.
 				</p>
 
@@ -24,8 +20,9 @@ export default function Home() {
 					>
 						<h3 className="text-xl font-semibold mb-2">Magic Spend Credit</h3>
 						<p className="text-gray-600 mb-4">
-							Perfect for demos and small amounts. Developers fund their balance through 
-							the Pimlico dashboard and we instantly provide ETH on any chain.
+							Perfect for demos and small amounts. Developers fund their balance
+							through the Pimlico dashboard and we instantly provide ETH on any
+							chain.
 						</p>
 						<span className="text-purple-600">Try Credit Mode →</span>
 					</Link>
@@ -34,10 +31,13 @@ export default function Home() {
 						href="/playground/resource-lock"
 						className="block p-6 bg-white rounded-lg border hover:shadow-lg transition-shadow"
 					>
-						<h3 className="text-xl font-semibold mb-2">Magic Spend Resource Lock</h3>
+						<h3 className="text-xl font-semibold mb-2">
+							Magic Spend Resource Lock
+						</h3>
 						<p className="text-gray-600 mb-4">
-							Ideal for any use case. Users lock their tokens in smart contracts 
-							and can instantly access ETH on any chain through simple message signing.
+							Ideal for any use case. Users lock their tokens in smart contracts
+							and can instantly access ETH on any chain through simple message
+							signing.
 						</p>
 						<span className="text-purple-600">Try Resource Lock Mode →</span>
 					</Link>

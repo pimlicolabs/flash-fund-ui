@@ -18,10 +18,12 @@ export default function ResourceLockPage() {
 
 					<div className="mb-8 p-4 bg-gray-50 rounded-lg">
 						<p className="text-gray-600">
-							Resource Lock mode is designed for production-scale applications, requiring no developer funding. 
-							Users lock their tokens in specialized contracts (OneBalance and Pimlico lock) and can instantly 
-							access ETH on any chain by signing allowance messages. This enables immediate cross-chain liquidity 
-							while maintaining user control over their assets.
+							Resource Lock mode is designed for production-scale applications,
+							requiring no developer funding. Users lock their tokens in
+							specialized contracts (OneBalance and Pimlico lock) and can
+							instantly access ETH on any chain by signing allowance messages.
+							This enables immediate cross-chain liquidity while maintaining
+							user control over their assets.
 						</p>
 						<ul className="mt-4 list-disc list-inside text-gray-600">
 							<li>No developer funding required</li>

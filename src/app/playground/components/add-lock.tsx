@@ -1,24 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
 	useAccount,
 	useBalance,
 	useChains,
 	useConfig,
 	useSendTransaction,
-	useWriteContract,
 } from "wagmi";
-import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
-import { Chain, formatEther, parseEther, toHex } from "viem";
+import { type Chain, formatEther, parseEther, toHex } from "viem";
 import { clipDecimals } from "@/utils";
 import { toast } from "react-toastify";
-import { MagicSpendStakeManagerAbi } from "@/abi/MagicSpendStakeManager";
 import { ETH } from "@/utils";
-import { AddLogFunction } from "../components/log-section";
+import type { AddLogFunction } from "../components/log-section";
 import NetworkSelector, { ENABLED_CHAINS } from "./network-selector";
 import { MagicSpend } from "@/utils/magic-spend";
-import { sendTransaction } from "viem/actions";
 
 interface AddLockProps {
 	addLog: AddLogFunction;
@@ -32,8 +28,10 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const config = useConfig();
 	const { sendTransactionAsync } = useSendTransaction();
-	const [resourceLock, setResourceLock] = useState<"pimlico" | "onebalance">("pimlico");
-	const chains = useChains()
+	const [resourceLock, setResourceLock] = useState<"pimlico" | "onebalance">(
+		"pimlico",
+	);
+	const chains = useChains();
 
 	const { data: balance } = useBalance({
 		address,
@@ -70,23 +68,23 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 			magicSpend.setChainId(selectedChain.id);
 
 			const [target, calldata, value] = await magicSpend.prepareStake(
-				resourceLock === "pimlico" 
+				resourceLock === "pimlico"
 					? {
-						type: "pimlico_lock",
-						data: {
-							token: ETH,
-							amount: toHex(parseEther(amount)),
-							unstakeDelaySec: toHex(unstakeDelaySec),
-						},
-					}
+							type: "pimlico_lock",
+							data: {
+								token: ETH,
+								amount: toHex(parseEther(amount)),
+								unstakeDelaySec: toHex(unstakeDelaySec),
+							},
+						}
 					: {
-						type: "onebalance",
-						data: {
-							token: ETH,
-							amount: toHex(parseEther(amount)),
-							account: address,
+							type: "onebalance",
+							data: {
+								token: ETH,
+								amount: toHex(parseEther(amount)),
+								account: address,
+							},
 						},
-					}
 			);
 
 			const hash = await sendTransactionAsync({
@@ -153,11 +151,13 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 					<label className="block text-sm font-medium mb-2">
 						Resource Lock
 					</label>
-					<select 
-						className="w-full p-2 border rounded" 
+					<select
+						className="w-full p-2 border rounded"
 						disabled={disabled}
 						value={resourceLock}
-						onChange={(e) => setResourceLock(e.target.value as "pimlico" | "onebalance")}
+						onChange={(e) =>
+							setResourceLock(e.target.value as "pimlico" | "onebalance")
+						}
 					>
 						<option value="pimlico">Pimlico Lock</option>
 						<option value="onebalance">One Balance</option>

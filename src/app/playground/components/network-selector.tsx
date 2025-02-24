@@ -1,4 +1,4 @@
-import { Chain } from "viem";
+import type { Chain } from "viem";
 import { baseSepolia, sepolia, arbitrumSepolia, base } from "viem/chains";
 import { useChainId, useSwitchChain } from "wagmi";
 
@@ -18,8 +18,11 @@ export default function NetworkSelector({
 
 	return (
 		<div>
-			<label className="block text-sm font-medium mb-2">Select Network</label>
+			<label htmlFor="network-select" className="block text-sm font-medium mb-2">
+				Select Network
+			</label>
 			<select
+				id="network-select"
 				value={chainId}
 				onChange={(e) => {
 					const newChainId = Number(e.target.value);
@@ -29,12 +32,15 @@ export default function NetworkSelector({
 					console.log("chain", chain);
 
 					if (chain) {
-						switchChain({ chainId: newChainId }, {
-							onError: (error) => {
-								console.error("Error switching chain:", error);
+						switchChain(
+							{ chainId: newChainId },
+							{
+								onError: (error) => {
+									console.error("Error switching chain:", error);
+								},
 							},
-						});
-						console.log("done")
+						);
+						console.log("done");
 						onChange?.(chain);
 					}
 				}}

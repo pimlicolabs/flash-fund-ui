@@ -1,5 +1,5 @@
 import { clipDecimals } from "@/utils";
-import { MagicSpendBalance } from "@/utils/magic-spend";
+import type { MagicSpendBalance } from "@/utils/magic-spend";
 import { formatEther } from "viem";
 
 export default function BalanceCard({

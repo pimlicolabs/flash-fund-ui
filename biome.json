@@ -27,12 +27,16 @@
 		"indentStyle": "tab"
 	},
 	"organizeImports": {
-		"enabled": true
+		"enabled": true,
+		"ignore": []
 	},
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true
+			"recommended": true,
+			"correctness": {
+				"noUnusedImports": "error"
+			}
 		}
 	},
 	"javascript": {

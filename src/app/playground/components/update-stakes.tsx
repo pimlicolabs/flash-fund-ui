@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useAccount, useConfig } from "wagmi";
 import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
-import { arbitrumSepolia, baseSepolia, sepolia } from "viem/chains";
 import { formatEther } from "viem";
-import { AddLogFunction } from "../components/log-section";
+import type { AddLogFunction } from "../components/log-section";
 import { ENABLED_CHAINS } from "./network-selector";
 
 interface UpdateStakesProps {
@@ -109,8 +108,12 @@ export default function UpdateLocks({
 
 									const amount = stake.amount - (stake.pending || BigInt(0));
 									const formattedAmount = formatAmount(amount);
-									const formattedUsdValue = (Number(stake.usdValue) / 1_000_000)
-										.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})
+									const formattedUsdValue = (
+										Number(stake.usdValue) / 1_000_000
+									).toLocaleString(undefined, {
+										minimumFractionDigits: 0,
+										maximumFractionDigits: 2,
+									});
 
 									return (
 										<tr
@@ -131,7 +134,9 @@ export default function UpdateLocks({
 												</div>
 											</th>
 											<td className="px-6 py-4">
-												<span className="capitalize">{stake.type.replace('_', ' ')}</span>
+												<span className="capitalize">
+													{stake.type.replace("_", " ")}
+												</span>
 											</td>
 											<td className="px-6 py-4 text-right">{`${formattedAmount} ETH`}</td>
 											<td className="px-6 py-4 text-right">
