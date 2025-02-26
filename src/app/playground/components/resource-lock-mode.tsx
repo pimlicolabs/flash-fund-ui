@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount, useSignTypedData } from "wagmi";
+import { useAccount, useChains, useSignTypedData, useSwitchChain } from "wagmi";
 import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
 import { useConfig } from "wagmi";
 import UpdateStakes from "./update-stakes";
@@ -10,10 +10,11 @@ import { isAddress, getAddress, parseEther, toHex, type Chain } from "viem";
 import AddLock from "./add-lock";
 import type { AddLogFunction } from "../components/log-section";
 import { ETH } from "@/utils";
-import NetworkSelector, { ENABLED_CHAINS } from "./network-selector";
+import NetworkSelector from "./network-selector";
 import { sendUserOperation } from "@/utils/user-operation";
 import { toast } from "react-toastify";
-// import { signTypedData } from '@wagmi/core'
+import { signQuote } from "@/utils/onebalance/sign-quote";
+import { useWalletClient } from 'wagmi'
 
 interface ResourceLockModeProps {
 	addLog: AddLogFunction;
@@ -25,16 +26,20 @@ interface TransferFundsProps {
 }
 
 function TransferFunds({ addLog, disabled }: TransferFundsProps) {
-	const [amount, setAmount] = useState<string>("0.0000000123");
+	const [amount, setAmount] = useState<string>("0.001");
 	const [recipient, setRecipient] = useState<string>(
 		"0x77d1f68C3C924cFD4732e64E93AEBEA836797485",
 	);
-	const [selectedChain, setSelectedChain] = useState<Chain>(ENABLED_CHAINS[0]);
+	const chains = useChains();	
+	const [selectedChain, setSelectedChain] = useState<Chain>(chains[0]);
 	const [isLoading, setIsLoading] = useState(false);
-	const [resourceLock, setResourceLock] = useState<"pimlico" | "onebalance">("pimlico");
+	const [resourceLock, setResourceLock] = useState<"pimlico" | "onebalance">("onebalance");
 	const config = useConfig();
 	const { isConnected, address } = useAccount();
 	const { signTypedDataAsync } = useSignTypedData();
+	const { data: walletClient } = useWalletClient();
+	const { switchChainAsync } = useSwitchChain();
+
 
 	const handlePimlicoTransfer = async () => {
 		if (!address) return;
@@ -135,7 +140,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 	};
 
 	const handleOneBalanceTransfer = async () => {
-		if (!address) return;
+		if (!address || !walletClient) return;
 
 		// Prepare allowance
 		const magicSpend = new MagicSpend(config, {
@@ -160,6 +165,17 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 				recipient: recipientAddress,
 			},
 		});
+
+		await switchChainAsync({
+			// @ts-ignore
+			chainId: allowance.originChainsOperations[0].typedDataToSign.domain.chainId,
+		})
+
+		const signedQuote = await signQuote(
+			walletClient
+		)(allowance);	
+
+		console.log(signedQuote);
 
 		// TODO: Implement OneBalance transfer logic
 		toast.info("OneBalance transfer not yet implemented", {
@@ -190,7 +206,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 	return (
 		<div className="space-y-6">
 			<h2 className="text-xl font-semibold">Transfer Funds</h2>
-			<NetworkSelector onChange={(chain) => setSelectedChain(chain)} />
+			<NetworkSelector chains={chains} onChange={(chain) => setSelectedChain(chain)} />
 
 			<div>
 				<label className="block text-sm font-medium mb-2">Resource Lock</label>

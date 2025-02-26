@@ -13,7 +13,7 @@ import { clipDecimals } from "@/utils";
 import { toast } from "react-toastify";
 import { ETH } from "@/utils";
 import type { AddLogFunction } from "../components/log-section";
-import NetworkSelector, { ENABLED_CHAINS } from "./network-selector";
+import NetworkSelector from "./network-selector";
 import { MagicSpend } from "@/utils/magic-spend";
 
 interface AddLockProps {
@@ -23,7 +23,8 @@ interface AddLockProps {
 
 export default function AddLock({ addLog, disabled }: AddLockProps) {
 	const { isConnected, address } = useAccount();
-	const [selectedChain, setSelectedChain] = useState<Chain>(ENABLED_CHAINS[0]);
+	const chains = useChains();
+	const [selectedChain, setSelectedChain] = useState<Chain>(chains[0]);
 	const [amount, setAmount] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const config = useConfig();
@@ -31,7 +32,6 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 	const [resourceLock, setResourceLock] = useState<"pimlico" | "onebalance">(
 		"pimlico",
 	);
-	const chains = useChains();
 
 	const { data: balance } = useBalance({
 		address,
@@ -146,7 +146,7 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 			</p>
 
 			<div className="space-y-4">
-				<NetworkSelector onChange={(chain) => setSelectedChain(chain)} />
+				<NetworkSelector chains={chains} onChange={(chain) => setSelectedChain(chain)} />
 
 				<div>
 					<label className="block text-sm font-medium mb-2">

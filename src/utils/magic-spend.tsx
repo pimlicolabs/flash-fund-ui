@@ -19,6 +19,7 @@ import { sepolia } from "viem/chains";
 import type { Config } from "wagmi";
 import { getPimlicoUrl } from ".";
 import { getHttpRpcClient } from "viem/utils";
+import { Quote } from "./onebalance/quote";
 
 export type MagicSpendCall = {
 	to: Address;
@@ -130,21 +131,8 @@ export type PimlicoMagicSpendSchema = [
 		Parameters: [
 			PimlicoMagicSpendPrepareAllowanceParams,
 		];
-		ReturnType: MagicSpendAllowance;
+		ReturnType: PimlicoMagicSpendPrepareAllowanceParams["type"] extends "pimlico_lock" ? MagicSpendAllowance : Quote;
 		Method: "pimlico_prepareMagicSpendAllowance";
-	},
-	{
-		Parameters: [
-			{
-				allowance: MagicSpendAllowance;
-				signature: Hex;
-			},
-		];
-		ReturnType: {
-			withdrawal: MagicSpendWithdrawal;
-			signature: Hex;
-		};
-		Method: "pimlico_grantMagicSpendAllowance";
 	},
 	{
 		Parameters: [
@@ -153,14 +141,6 @@ export type PimlicoMagicSpendSchema = [
 		];
 		ReturnType: [Address, Hex];
 		Method: "pimlico_sponsorMagicSpendWithdrawal";
-	},
-	{
-		Parameters: [Address];
-		ReturnType: {
-			signature: Hex;
-			assets: (MagicSpendAssetAllowance & { used: bigint })[];
-		}[];
-		Method: "pimlico_getMagicSpendAllowancesByOperator";
 	},
 ];
 

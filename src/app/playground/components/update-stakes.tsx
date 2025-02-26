@@ -1,9 +1,8 @@
 import { useState, useCallback } from "react";
-import { useAccount, useConfig } from "wagmi";
+import { useAccount, useChains, useConfig } from "wagmi";
 import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
 import { formatEther } from "viem";
 import type { AddLogFunction } from "../components/log-section";
-import { ENABLED_CHAINS } from "./network-selector";
 
 interface UpdateStakesProps {
 	addLog: AddLogFunction;
@@ -18,7 +17,7 @@ export default function UpdateLocks({
 }: UpdateStakesProps) {
 	const { isConnected, address } = useAccount();
 	const config = useConfig();
-	const chains = ENABLED_CHAINS;
+	const chains = useChains();
 	const [loading, setLoading] = useState(false);
 
 	const updateStakes = useCallback(async () => {

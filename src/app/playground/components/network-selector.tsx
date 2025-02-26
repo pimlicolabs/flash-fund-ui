@@ -1,15 +1,13 @@
 import type { Chain } from "viem";
-import { baseSepolia, sepolia, arbitrumSepolia, base, arbitrum, mainnet } from "viem/chains";
 import { useChainId, useSwitchChain } from "wagmi";
 
-export const ENABLED_CHAINS = [baseSepolia, sepolia, arbitrumSepolia, base, arbitrum, mainnet];
 
 export default function NetworkSelector({
-	chains = ENABLED_CHAINS,
+	chains,
 	disabled = false,
 	onChange,
 }: {
-	chains?: Chain[];
+	chains: readonly[Chain, ...Chain[]];
 	disabled?: boolean;
 	onChange?: (chain: Chain) => void;
 }) {
