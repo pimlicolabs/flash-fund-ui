@@ -84,6 +84,15 @@ export type SponsorWithdrawalPimlicoLockParams = {
 	};
 };
 
+export type SponsorWithdrawalOneBalanceParams = {
+	type: "onebalance";
+	data: {
+		quote: Quote;
+		amount: string;
+		recipient: Address;
+	};
+};
+
 export type GetStakesParams = {
 	account: Address;
 };
@@ -136,7 +145,7 @@ export type PimlicoMagicSpendSchema = [
 	},
 	{
 		Parameters: [
-			SponsorWithdrawalCreditParams | SponsorWithdrawalPimlicoLockParams,
+			SponsorWithdrawalCreditParams | SponsorWithdrawalPimlicoLockParams | SponsorWithdrawalOneBalanceParams,
 			null,
 		];
 		ReturnType: [Address, Hex];
@@ -317,7 +326,9 @@ export class MagicSpend {
 		};
 	}
 
-	async prepareAllowance(params: PimlicoMagicSpendPrepareAllowanceParams) {
+	async prepareAllowance<T extends PimlicoMagicSpendPrepareAllowanceParams>(
+		params: T
+	): Promise<T["type"] extends "pimlico_lock" ? MagicSpendAllowance : Quote> {
 		return this.getClient().request({
 			method: "pimlico_prepareMagicSpendAllowance",
 			params: [params],
@@ -325,7 +336,7 @@ export class MagicSpend {
 	}
 
 	async sponsorWithdrawal(
-		params: SponsorWithdrawalCreditParams | SponsorWithdrawalPimlicoLockParams,
+		params: SponsorWithdrawalCreditParams | SponsorWithdrawalPimlicoLockParams | SponsorWithdrawalOneBalanceParams,
 	): Promise<MagicSpendSponsorWithdrawalResponse> {
 		return this.getClient().request({
 			method: "pimlico_sponsorMagicSpendWithdrawal",

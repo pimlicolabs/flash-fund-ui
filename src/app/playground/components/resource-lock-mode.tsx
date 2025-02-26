@@ -173,15 +173,31 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 
 		const signedQuote = await signQuote(
 			walletClient
-		)(allowance);	
+		)(allowance);
 
-		console.log(signedQuote);
-
-		// TODO: Implement OneBalance transfer logic
-		toast.info("OneBalance transfer not yet implemented", {
-			position: "bottom-right",
-			autoClose: 5000,
+		const withdrawal = await magicSpend.sponsorWithdrawal({
+			type: "onebalance",
+			data: {
+				quote: signedQuote,
+				amount: toHex(parseEther(amount)),
+				recipient: recipientAddress,
+			},
 		});
+
+		const [withdrawalManagerAddress, withdrawalCallData] = withdrawal;
+
+		const receipt = await sendUserOperation(
+			selectedChain,
+			withdrawalManagerAddress,
+			withdrawalCallData,
+			addLog,
+		);
+
+		// // TODO: Implement OneBalance transfer logic
+		// toast.info("OneBalance transfer not yet implemented", {
+		// 	position: "bottom-right",
+		// 	autoClose: 5000,
+		// });
 	};
 
 	const handleTransfer = async () => {
