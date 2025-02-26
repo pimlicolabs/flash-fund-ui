@@ -128,15 +128,7 @@ export type PimlicoMagicSpendSchema = [
 	},
 	{
 		Parameters: [
-			{
-				type: "pimlico_lock";
-				data: {
-					account: Address;
-					token: Address;
-					amount: string;
-					recipient: Address;
-				};
-			},
+			PimlicoMagicSpendPrepareAllowanceParams,
 		];
 		ReturnType: MagicSpendAllowance;
 		Method: "pimlico_prepareMagicSpendAllowance";
@@ -173,7 +165,7 @@ export type PimlicoMagicSpendSchema = [
 ];
 
 export type PimlicoMagicSpendPrepareAllowanceParams = {
-	type: "pimlico_lock";
+	type: "pimlico_lock" | "onebalance";
 	data: {
 		account: Address;
 		token: Address;

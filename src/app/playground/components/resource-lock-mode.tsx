@@ -31,11 +31,12 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 	);
 	const [selectedChain, setSelectedChain] = useState<Chain>(ENABLED_CHAINS[0]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [resourceLock, setResourceLock] = useState<"pimlico" | "onebalance">("pimlico");
 	const config = useConfig();
 	const { isConnected, address } = useAccount();
 	const { signTypedDataAsync } = useSignTypedData();
 
-	const handleTransfer = async () => {
+	const handlePimlicoTransfer = async () => {
 		if (!address) return;
 		// Prepare allowance
 		const magicSpend = new MagicSpend(config, {
@@ -133,10 +134,76 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 		);
 	};
 
+	const handleOneBalanceTransfer = async () => {
+		if (!address) return;
+
+		// Prepare allowance
+		const magicSpend = new MagicSpend(config, {
+			onRequest: (method, params) => {
+				addLog("request", { method, params });
+			},
+			onResponse: (method, params, result) => {
+				addLog("response", { result });
+			},
+		});
+
+		magicSpend.setChainId(selectedChain.id);
+
+		const recipientAddress = getAddress(recipient);
+
+		const allowance = await magicSpend.prepareAllowance({
+			type: "onebalance",
+			data: {
+				account: address,
+				token: ETH,
+				amount: toHex(parseEther(amount)),
+				recipient: recipientAddress,
+			},
+		});
+
+		// TODO: Implement OneBalance transfer logic
+		toast.info("OneBalance transfer not yet implemented", {
+			position: "bottom-right",
+			autoClose: 5000,
+		});
+	};
+
+	const handleTransfer = async () => {
+		setIsLoading(true);
+		try {
+			if (resourceLock === "pimlico") {
+				await handlePimlicoTransfer();
+			} else {
+				await handleOneBalanceTransfer();
+			}
+		} catch (error) {
+			console.error("Transfer error:", error);
+			toast.error(error instanceof Error ? error.message : "Transfer failed", {
+				position: "bottom-right",
+				autoClose: 5000,
+			});
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
 	return (
 		<div className="space-y-6">
 			<h2 className="text-xl font-semibold">Transfer Funds</h2>
 			<NetworkSelector onChange={(chain) => setSelectedChain(chain)} />
+
+			<div>
+				<label className="block text-sm font-medium mb-2">Resource Lock</label>
+				<select
+					className="w-full p-2 border rounded"
+					disabled={disabled}
+					value={resourceLock}
+					onChange={(e) => setResourceLock(e.target.value as "pimlico" | "onebalance")}
+				>
+					<option value="pimlico">Pimlico Lock</option>
+					<option value="onebalance">One Balance</option>
+				</select>
+			</div>
 
 			<div>
 				<label className="block text-sm font-medium mb-2">Amount (ETH)</label>
