@@ -1,5 +1,5 @@
 import { clipDecimals } from "@/utils";
-import { MagicSpendBalance } from "@/utils/magic-spend";
+import type { MagicSpendBalance } from "@/utils/magic-spend";
 import { formatEther } from "viem";
 
 export default function BalanceCard({
@@ -18,7 +18,8 @@ export default function BalanceCard({
 					<div className="text-2xl font-bold text-purple-700">{chain.name}</div>
 				)}
 				<div className="text-2xl font-bold text-purple-700">
-					{clipDecimals(formatEther(balance.balance))} {chain?.nativeCurrency.symbol}
+					{clipDecimals(formatEther(balance.balance))}{" "}
+					{chain?.nativeCurrency.symbol}
 				</div>
 			</div>
 		);
@@ -28,7 +29,8 @@ export default function BalanceCard({
 		<div className="p-6 bg-white border rounded-lg">
 			{chain && <div className="text-gray-600">{chain.name}</div>}
 			<div className="text-2xl font-bold">
-				{clipDecimals(formatEther(balance.balance))} {chain?.nativeCurrency.symbol}
+				{clipDecimals(formatEther(balance.balance))}{" "}
+				{chain?.nativeCurrency.symbol}
 			</div>
 		</div>
 	);
