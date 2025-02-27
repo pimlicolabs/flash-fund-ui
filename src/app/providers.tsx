@@ -3,7 +3,7 @@
 import type * as React from "react";
 import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import { sepolia, baseSepolia, arbitrumSepolia, base, arbitrum, mainnet, optimism, optimismSepolia } from "wagmi/chains";
+import { sepolia, baseSepolia, arbitrumSepolia, base, arbitrum, mainnet, optimism, optimismSepolia, polygon, polygonAmoy, gnosis } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { http } from "wagmi";
 
@@ -13,6 +13,7 @@ const config = getDefaultConfig({
 	chains: [
 		sepolia, baseSepolia, arbitrumSepolia, optimismSepolia,
 		base, arbitrum, mainnet, optimism,
+		polygon, polygonAmoy, gnosis
 	],
 	ssr: true,
 	transports: {
