@@ -114,6 +114,8 @@ export default function UpdateLocks({
 										maximumFractionDigits: 2,
 									});
 
+									const nativeCurrency = chain.nativeCurrency;
+
 									return (
 										<tr
 											key={index}
@@ -137,7 +139,7 @@ export default function UpdateLocks({
 													{stake.type.replace("_", " ")}
 												</span>
 											</td>
-											<td className="px-6 py-4 text-right">{`${formattedAmount} ETH`}</td>
+											<td className="px-6 py-4 text-right">{`${formattedAmount} ${nativeCurrency.symbol}`}</td>
 											<td className="px-6 py-4 text-right">
 												{`$${formattedUsdValue}`}
 											</td>

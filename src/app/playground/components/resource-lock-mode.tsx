@@ -15,6 +15,9 @@ import { sendUserOperation } from "@/utils/user-operation";
 import { toast } from "react-toastify";
 import { signQuote } from "@/utils/onebalance/sign-quote";
 import { useWalletClient } from 'wagmi'
+import { base } from "wagmi/chains";
+import { arbitrum } from "wagmi/chains";
+import { optimism } from "wagmi/chains";
 
 interface ResourceLockModeProps {
 	addLog: AddLogFunction;
@@ -223,7 +226,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 	return (
 		<div className="space-y-6">
 			<h2 className="text-xl font-semibold">Transfer Funds</h2>
-			<NetworkSelector chains={chains} />
+			<NetworkSelector chains={resourceLock === "pimlico" ? chains : [optimism, base, arbitrum]} />
 
 			<div>
 				<label className="block text-sm font-medium mb-2">Resource Lock</label>
