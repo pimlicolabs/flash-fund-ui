@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
 	useAccount,
 	useBalance,
+	useChainId,
 	useChains,
 	useConfig,
 	useSendTransaction,
@@ -15,6 +16,7 @@ import { ETH } from "@/utils";
 import type { AddLogFunction } from "../components/log-section";
 import NetworkSelector from "./network-selector";
 import { MagicSpend } from "@/utils/magic-spend";
+import { base, optimism, arbitrum } from "viem/chains";
 
 interface AddLockProps {
 	addLog: AddLogFunction;
@@ -24,7 +26,7 @@ interface AddLockProps {
 export default function AddLock({ addLog, disabled }: AddLockProps) {
 	const { isConnected, address } = useAccount();
 	const chains = useChains();
-	const [selectedChain, setSelectedChain] = useState<Chain>(chains[0]);
+	const chainId = useChainId()
 	const [amount, setAmount] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const config = useConfig();
@@ -35,7 +37,7 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 
 	const { data: balance } = useBalance({
 		address,
-		chainId: selectedChain.id,
+		chainId,
 	});
 
 	const handleSetMax = () => {
@@ -65,7 +67,7 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 				},
 			});
 
-			magicSpend.setChainId(selectedChain.id);
+			magicSpend.setChainId(chainId);
 
 			const [target, calldata, value] = await magicSpend.prepareStake(
 				resourceLock === "pimlico"
@@ -91,11 +93,13 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 				data: calldata,
 				to: target,
 				value: BigInt(value),
-				chainId: selectedChain.id,
+				chainId,
 			});
 
 			if (hash) {
-				const txUrl = `${selectedChain.blockExplorers?.default.url}/tx/${hash}`;
+				const chain = chains.find((c) => c.id === chainId);
+
+				const txUrl = `${chain?.blockExplorers?.default.url}/tx/${hash}`;
 
 				addLog("debug", {
 					hash,
@@ -146,7 +150,7 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 			</p>
 
 			<div className="space-y-4">
-				<NetworkSelector chains={chains} onChange={(chain) => setSelectedChain(chain)} />
+				<NetworkSelector chains={resourceLock === "pimlico" ? chains : [optimism, base, arbitrum]} />
 
 				<div>
 					<label className="block text-sm font-medium mb-2">

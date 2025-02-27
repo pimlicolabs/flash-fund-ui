@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { Chain } from "viem";
 import { useChainId, useSwitchChain } from "wagmi";
 
@@ -13,6 +14,12 @@ export default function NetworkSelector({
 }) {
 	const chainId = useChainId();
 	const { switchChain } = useSwitchChain();
+
+	useEffect(() => {
+		if (!chains.find((c) => c.id === chainId)) {
+			switchChain({ chainId: chains[0].id });
+		}
+	}, [chainId, chains]);
 
 	return (
 		<div>

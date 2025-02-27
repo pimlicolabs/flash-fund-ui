@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount, useChains, useSignTypedData, useSwitchChain } from "wagmi";
+import { useAccount, useChainId, useChains, useSignTypedData, useSwitchChain } from "wagmi";
 import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
 import { useConfig } from "wagmi";
 import UpdateStakes from "./update-stakes";
@@ -31,7 +31,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 		"0x77d1f68C3C924cFD4732e64E93AEBEA836797485",
 	);
 	const chains = useChains();	
-	const [selectedChain, setSelectedChain] = useState<Chain>(chains[0]);
+	const chainId = useChainId();
 	const [isLoading, setIsLoading] = useState(false);
 	const [resourceLock, setResourceLock] = useState<"pimlico" | "onebalance">("onebalance");
 	const config = useConfig();
@@ -39,7 +39,6 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 	const { signTypedDataAsync } = useSignTypedData();
 	const { data: walletClient } = useWalletClient();
 	const { switchChainAsync } = useSwitchChain();
-
 
 	const handlePimlicoTransfer = async () => {
 		if (!address) return;
@@ -53,7 +52,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 			},
 		});
 
-		magicSpend.setChainId(selectedChain.id);
+		magicSpend.setChainId(chainId);
 
 		const recipientAddress = getAddress(recipient);
 
@@ -70,7 +69,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 		const signature = await signTypedDataAsync({
 			domain: {
 				name: "Pimlico Lock",
-				chainId: selectedChain.id,
+				chainId,
 				verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
 				version: "1",
 			},
@@ -112,8 +111,12 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 
 		const [withdrawalManagerAddress, withdrawalCallData] = withdrawal;
 
+		const chain = chains.find((c) => c.id === chainId);
+
+		if (!chain) return;
+
 		const receipt = await sendUserOperation(
-			selectedChain,
+			chain,
 			withdrawalManagerAddress,
 			withdrawalCallData,
 			addLog,
@@ -124,7 +127,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 				🦄 Transfer successful!
 				<br />
 				<a
-					href={`${selectedChain.blockExplorers?.default.url}/tx/${receipt.receipt.transactionHash}`}
+					href={`${chain.blockExplorers?.default.url}/tx/${receipt.receipt.transactionHash}`}
 					target="_blank"
 					rel="noopener noreferrer"
 					className="text-purple-500 hover:text-purple-700"
@@ -152,7 +155,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 			},
 		});
 
-		magicSpend.setChainId(selectedChain.id);
+		magicSpend.setChainId(chainId);
 
 		const recipientAddress = getAddress(recipient);
 
@@ -186,18 +189,16 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 
 		const [withdrawalManagerAddress, withdrawalCallData] = withdrawal;
 
+		const chain = chains.find((c) => c.id === chainId);
+
+		if (!chain) return;
+
 		const receipt = await sendUserOperation(
-			selectedChain,
+			chain,
 			withdrawalManagerAddress,
 			withdrawalCallData,
 			addLog,
 		);
-
-		// // TODO: Implement OneBalance transfer logic
-		// toast.info("OneBalance transfer not yet implemented", {
-		// 	position: "bottom-right",
-		// 	autoClose: 5000,
-		// });
 	};
 
 	const handleTransfer = async () => {
@@ -222,7 +223,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 	return (
 		<div className="space-y-6">
 			<h2 className="text-xl font-semibold">Transfer Funds</h2>
-			<NetworkSelector chains={chains} onChange={(chain) => setSelectedChain(chain)} />
+			<NetworkSelector chains={chains} />
 
 			<div>
 				<label className="block text-sm font-medium mb-2">Resource Lock</label>
