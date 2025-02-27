@@ -15,9 +15,8 @@ import { sendUserOperation } from "@/utils/user-operation";
 import { toast } from "react-toastify";
 import { signQuote } from "@/utils/onebalance/sign-quote";
 import { useWalletClient } from 'wagmi'
-import { base } from "wagmi/chains";
-import { arbitrum } from "wagmi/chains";
-import { optimism } from "wagmi/chains";
+import { base, optimism, arbitrum } from "wagmi/chains";
+import { ONEBALANCE_SUPPORTED_CHAINS, OneBalanceChainId } from "@/utils/onebalance/assets";
 
 interface ResourceLockModeProps {
 	addLog: AddLogFunction;
@@ -226,7 +225,14 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 	return (
 		<div className="space-y-6">
 			<h2 className="text-xl font-semibold">Transfer Funds</h2>
-			<NetworkSelector chains={resourceLock === "pimlico" ? chains : [optimism, base, arbitrum]} />
+			<NetworkSelector chains={chains} />
+			{resourceLock === "onebalance" && !ONEBALANCE_SUPPORTED_CHAINS.includes(chainId as OneBalanceChainId) && (
+				<div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+					<p className="text-yellow-700">
+						OneBalance is only available on Optimism, Base, and Arbitrum. Please switch to one of these networks to continue.
+					</p>
+				</div>
+			)}
 
 			<div>
 				<label className="block text-sm font-medium mb-2">Resource Lock</label>
@@ -277,7 +283,8 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 			<div className="flex justify-end">
 				<button
 					onClick={handleTransfer}
-					disabled={isLoading || !isAddress(recipient) || !amount || disabled}
+					disabled={isLoading || !isAddress(recipient) || !amount || disabled || 
+						(resourceLock === "onebalance" && !ONEBALANCE_SUPPORTED_CHAINS.includes(chainId as OneBalanceChainId))}
 					className="px-3 py-1.5 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
 				>
 					{isLoading ? "Processing..." : "Send Funds"}

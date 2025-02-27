@@ -1,3 +1,9 @@
+import { arbitrum } from "viem/chains";
+
+import { base } from "viem/chains";
+
+import { optimism } from "viem/chains";
+
 export type AssetId = `${string}:${string}`;
 
 export interface Asset {
@@ -12,3 +18,6 @@ export interface Asset {
     symbol: string;
   }[];
 }
+
+export const ONEBALANCE_SUPPORTED_CHAINS = [optimism.id, base.id, arbitrum.id] as const;
+export type OneBalanceChainId = typeof ONEBALANCE_SUPPORTED_CHAINS[number];

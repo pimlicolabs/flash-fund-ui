@@ -17,6 +17,7 @@ import type { AddLogFunction } from "../components/log-section";
 import NetworkSelector from "./network-selector";
 import { MagicSpend } from "@/utils/magic-spend";
 import { base, optimism, arbitrum } from "viem/chains";
+import { ONEBALANCE_SUPPORTED_CHAINS, OneBalanceChainId } from "@/utils/onebalance/assets";
 
 interface AddLockProps {
 	addLog: AddLogFunction;
@@ -150,7 +151,14 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 			</p>
 
 			<div className="space-y-4">
-				<NetworkSelector chains={resourceLock === "pimlico" ? chains : [optimism, base, arbitrum]} />
+				<NetworkSelector chains={chains} />
+				{resourceLock === "onebalance" && !ONEBALANCE_SUPPORTED_CHAINS.includes(chainId as OneBalanceChainId) && (
+					<div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+						<p className="text-yellow-700">
+							OneBalance is only available on Optimism, Base, and Arbitrum. Please switch to one of these networks to continue.
+						</p>
+					</div>
+				)}
 
 				<div>
 					<label className="block text-sm font-medium mb-2">
