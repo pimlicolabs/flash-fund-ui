@@ -35,7 +35,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 	const chains = useChains();	
 	const chainId = useChainId();
 	const [isLoading, setIsLoading] = useState(false);
-	const [resourceLock, setResourceLock] = useState<"pimlico" | "onebalance">("onebalance");
+	const [resourceLock, setResourceLock] = useState<"pimlico" | "onebalance">("pimlico");
 	const config = useConfig();
 	const { isConnected, address } = useAccount();
 	const { signTypedDataAsync } = useSignTypedData();

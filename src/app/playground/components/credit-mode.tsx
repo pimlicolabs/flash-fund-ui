@@ -32,7 +32,7 @@ interface CreditModeProps {
 
 export default function CreditMode({ addLog }: CreditModeProps) {
 	const [isLoading, setIsLoading] = useState(false);
-	const [amount, setAmount] = useState<string>("0.0000000123");
+	const [amount, setAmount] = useState<string>("0.0000000001");
 	const [recipient, setRecipient] = useState<Address>(
 		"0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1",
 	);
@@ -144,10 +144,11 @@ export default function CreditMode({ addLog }: CreditModeProps) {
 				<input
 					type="string"
 					value={amount}
-					onChange={(e) => setAmount(e.target.value)}
-					className="w-full p-2 border rounded"
-					placeholder="0.0000000123"
+					disabled
+					className="w-full p-2 border rounded bg-gray-100"
+					placeholder="0.0000000001"
 				/>
+				<p className="text-sm text-gray-500 mt-1">Amount is fixed for demo purposes</p>
 			</div>
 
 			<div>
