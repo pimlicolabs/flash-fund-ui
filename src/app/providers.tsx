@@ -8,7 +8,7 @@ import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { http } from "wagmi";
 
 const config = getDefaultConfig({
-	appName: "Pimlico MagicSpend++ Playground",
+	appName: "Pimlico FlashFund Playground",
 	projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
 	chains: [
 		sepolia, baseSepolia, arbitrumSepolia, optimismSepolia,

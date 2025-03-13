@@ -42,14 +42,14 @@ const NavBar = () => {
 					href="/playground/credit"
 					className={`hover:text-primary ${pathname?.startsWith("/playground/credit") ? "text-purple-500 font-medium" : ""}`}
 				>
-					MagicSpend.Credit
+					FlashFund.Credit
 				</Link>
 
 				<Link
 					href="/playground/resource-lock"
 					className={`hover:text-primary ${pathname?.startsWith("/playground/resource-lock") ? "text-purple-500 font-medium" : ""}`}
 				>
-					MagicSpend.ResourceLock
+					FlashFund.ResourceLock
 				</Link>
 
 				<Link
