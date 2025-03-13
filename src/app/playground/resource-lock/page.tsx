@@ -14,7 +14,7 @@ export default function ResourceLockPage() {
 			{/* Main Content Section */}
 			<div className="flex-1 p-4 overflow-auto">
 				<div className="max-w-3xl mx-auto">
-					<h1 className="text-2xl font-bold mb-4">MagicSpend.ResourceLock</h1>
+					<h1 className="text-2xl font-bold mb-4">FlashFund.ResourceLock</h1>
 
 					<div className="mb-8 p-4 bg-gray-50 rounded-lg">
 						<p className="text-gray-600">

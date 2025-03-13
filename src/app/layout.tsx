@@ -7,8 +7,8 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-	title: "Magic Spend",
-	description: "Magic Spend by Pimlico",
+	title: "FlashFund",
+	description: "FlashFund by Pimlico",
 };
 
 export default function RootLayout({
