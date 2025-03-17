@@ -71,9 +71,9 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 		const signature = await signTypedDataAsync({
 			domain: {
 				name: "Pimlico Lock",
-				chainId,
-				verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
 				version: "1",
+				// chainId,
+				// verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
 			},
 			types: {
 				AssetAllowance: [
