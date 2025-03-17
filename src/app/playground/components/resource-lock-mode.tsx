@@ -70,7 +70,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 
 		const signature = await signTypedDataAsync({
 			domain: {
-				name: "Pimlico Lock",
+				name: "Pimlico FlashFund",
 				version: "1",
 				// chainId,
 				// verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
