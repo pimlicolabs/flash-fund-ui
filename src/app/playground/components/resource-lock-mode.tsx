@@ -72,8 +72,8 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 			domain: {
 				name: "Pimlico FlashFund",
 				version: "1",
-				// chainId,
-				// verifyingContract: "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC",
+				chainId: 1,
+				verifyingContract: "0xAE7f7C29a76f536af5e47CECAa43b0563a753D32",
 			},
 			types: {
 				AssetAllowance: [
