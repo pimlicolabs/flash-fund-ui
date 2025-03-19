@@ -1,13 +1,13 @@
 import { useState, useCallback } from "react";
 import { useAccount, useChains, useConfig } from "wagmi";
-import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
+import { FlashFund, type FlashFundLocks } from "@/utils/flash-fund";
 import { formatEther } from "viem";
 import type { AddLogFunction } from "../components/log-section";
 
 interface UpdateStakesProps {
 	addLog: AddLogFunction;
-	stakes: PimlicoMagicSpendStake[];
-	onStakesUpdate: (stakes: PimlicoMagicSpendStake[]) => void;
+	stakes: FlashFundLocks[];
+	onStakesUpdate: (stakes: FlashFundLocks[]) => void;
 }
 
 export default function UpdateLocks({
@@ -25,7 +25,7 @@ export default function UpdateLocks({
 
 		setLoading(true);
 		try {
-			const magicSpend = new MagicSpend(config, {
+			const flashFund = new FlashFund(config, {
 				onRequest: (method, params) => {
 					addLog("request", { method, params });
 				},
@@ -34,7 +34,7 @@ export default function UpdateLocks({
 				},
 			});
 
-			const newStakes = await magicSpend.getStakes({
+			const newStakes = await flashFund.getStakes({
 				account: address,
 			});
 			onLocksUpdate(newStakes.stakes);
@@ -102,7 +102,11 @@ export default function UpdateLocks({
 									const formatAmount = (amount: bigint) => {
 										const value = Number(formatEther(amount));
 										if (value === 0) return "0";
-										return value < 0.001 ? "<0.001" : value.toFixed(3);
+
+										return value < 0.001 ? "<0.001" : value.toLocaleString(undefined, {
+											minimumFractionDigits: 0,
+											maximumFractionDigits: 3,
+										});
 									};
 
 									const amount = stake.amount - (stake.pending || BigInt(0));
@@ -111,7 +115,7 @@ export default function UpdateLocks({
 										Number(stake.usdValue) / 1_000_000
 									).toLocaleString(undefined, {
 										minimumFractionDigits: 0,
-										maximumFractionDigits: 2,
+										maximumFractionDigits: 3,
 									});
 
 									const nativeCurrency = chain.nativeCurrency;

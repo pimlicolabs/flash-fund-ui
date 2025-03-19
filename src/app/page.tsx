@@ -46,7 +46,7 @@ export default function Home() {
 				<div className="space-y-4">
 					<div className="flex items-center gap-2">
 						<Link
-							href="https://docs.pimlico.io/infra/magic-spend"
+							href="https://docs.pimlico.io/infra/flash-fund"
 							target="_blank"
 							className="text-purple-600 hover:text-purple-800"
 						>
