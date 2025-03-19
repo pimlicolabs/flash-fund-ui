@@ -10,7 +10,7 @@ import {
 } from "viem";
 import { sepolia, baseSepolia, arbitrumSepolia } from "viem/chains";
 import { toast } from "react-toastify";
-import { MagicSpend } from "@/utils/magic-spend";
+import { FlashFund } from "@/utils/flash-fund";
 import { useConfig } from "wagmi";
 import type { AddLogFunction } from "../components/log-section";
 import { sendUserOperation } from "@/utils/user-operation";
@@ -41,7 +41,7 @@ export default function CreditMode({ addLog }: CreditModeProps) {
 	>(sepolia);
 	const chains = [baseSepolia, sepolia, arbitrumSepolia];
 	const config = useConfig();
-	const magicSpend = new MagicSpend(config, {
+	const flashFund = new FlashFund(config, {
 		onRequest: (method, params) => {
 			addLog("request", { method, params });
 		},
@@ -55,10 +55,10 @@ export default function CreditMode({ addLog }: CreditModeProps) {
 			setIsLoading(true);
 			addLog("debug", { message: "Preparing withdrawal..." });
 
-			await magicSpend.setChainId(selectedChain.id);
+			flashFund.setChainId(selectedChain.id);
 
 			const [withdrawalManagerAddress, withdrawalCallData] =
-				await magicSpend.sponsorWithdrawal({
+				await flashFund.sponsorWithdrawal({
 					type: "credits",
 					data: {
 						token: ETH_ADDRESS,

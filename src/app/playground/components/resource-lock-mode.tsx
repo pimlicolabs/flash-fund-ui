@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useChainId, useChains, useSignTypedData, useSwitchChain } from "wagmi";
-import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
+import { FlashFund, type FlashFundLocks } from "@/utils/flash-fund";
 import { useConfig } from "wagmi";
 import UpdateStakes from "./update-stakes";
 import { isAddress, getAddress, parseEther, toHex, type Chain } from "viem";
@@ -44,8 +44,9 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 
 	const handlePimlicoTransfer = async () => {
 		if (!address) return;
+
 		// Prepare allowance
-		const magicSpend = new MagicSpend(config, {
+		const flashFund = new FlashFund(config, {
 			onRequest: (method, params) => {
 				addLog("request", { method, params });
 			},
@@ -54,11 +55,11 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 			},
 		});
 
-		magicSpend.setChainId(chainId);
+		flashFund.setChainId(chainId);
 
 		const recipientAddress = getAddress(recipient);
 
-		const allowance = await magicSpend.prepareAllowance({
+		const allowance = await flashFund.prepareAllowance({
 			type: "pimlico_lock",
 			data: {
 				account: address,
@@ -72,8 +73,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 			domain: {
 				name: "Pimlico FlashFund",
 				version: "1",
-				chainId: 1,
-				verifyingContract: "0xAE7f7C29a76f536af5e47CECAa43b0563a753D32",
+				verifyingContract: "0x1F58f7e54E632E7867D5eC5B59De3d80a759764e",
 			},
 			types: {
 				AssetAllowance: [
@@ -103,7 +103,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 			},
 		});
 
-		const withdrawal = await magicSpend.sponsorWithdrawal({
+		const withdrawal = await flashFund.sponsorWithdrawal({
 			type: "pimlico_lock",
 			data: {
 				allowance,
@@ -148,7 +148,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 		if (!address || !walletClient) return;
 
 		// Prepare allowance
-		const magicSpend = new MagicSpend(config, {
+		const flashFund = new FlashFund(config, {
 			onRequest: (method, params) => {
 				addLog("request", { method, params });
 			},
@@ -157,11 +157,11 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 			},
 		});
 
-		magicSpend.setChainId(chainId);
+		flashFund.setChainId(chainId);
 
 		const recipientAddress = getAddress(recipient);
 
-		const allowance = await magicSpend.prepareAllowance({
+		const allowance = await flashFund.prepareAllowance({
 			type: "onebalance",
 			data: {
 				account: address,
@@ -180,7 +180,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 			walletClient
 		)(allowance);
 
-		const withdrawal = await magicSpend.sponsorWithdrawal({
+		const withdrawal = await flashFund.sponsorWithdrawal({
 			type: "onebalance",
 			data: {
 				quote: signedQuote,
@@ -297,7 +297,7 @@ function TransferFunds({ addLog, disabled }: TransferFundsProps) {
 export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
 	const { isConnected, address } = useAccount();
 	const config = useConfig();
-	const [stakes, setStakes] = useState<PimlicoMagicSpendStake[]>([]);
+	const [stakes, setStakes] = useState<FlashFundLocks[]>([]);
 	const [loading, setLoading] = useState(false);
 
 	const handleSubmit = async () => {
@@ -305,7 +305,7 @@ export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
 
 		setLoading(true);
 		try {
-			const magicSpend = new MagicSpend(config, {
+			const flashFund = new FlashFund(config, {
 				onRequest: (method, params) => {
 					addLog("request", { method, params });
 				},
@@ -314,7 +314,7 @@ export default function ResourceLockMode({ addLog }: ResourceLockModeProps) {
 				},
 			});
 
-			const { stakes } = await magicSpend.getStakes({
+			const { stakes } = await flashFund.getStakes({
 				account: address,
 			});
 			setStakes(stakes);

@@ -1,13 +1,13 @@
 import { useState, useCallback } from "react";
 import { useAccount, useChains, useConfig } from "wagmi";
-import { MagicSpend, type PimlicoMagicSpendStake } from "@/utils/magic-spend";
+import { FlashFund, type FlashFundLocks } from "@/utils/flash-fund";
 import { formatEther } from "viem";
 import type { AddLogFunction } from "../components/log-section";
 
 interface UpdateStakesProps {
 	addLog: AddLogFunction;
-	stakes: PimlicoMagicSpendStake[];
-	onStakesUpdate: (stakes: PimlicoMagicSpendStake[]) => void;
+	stakes: FlashFundLocks[];
+	onStakesUpdate: (stakes: FlashFundLocks[]) => void;
 }
 
 export default function UpdateLocks({
@@ -25,7 +25,7 @@ export default function UpdateLocks({
 
 		setLoading(true);
 		try {
-			const magicSpend = new MagicSpend(config, {
+			const flashFund = new FlashFund(config, {
 				onRequest: (method, params) => {
 					addLog("request", { method, params });
 				},
@@ -34,7 +34,7 @@ export default function UpdateLocks({
 				},
 			});
 
-			const newStakes = await magicSpend.getStakes({
+			const newStakes = await flashFund.getStakes({
 				account: address,
 			});
 			onLocksUpdate(newStakes.stakes);

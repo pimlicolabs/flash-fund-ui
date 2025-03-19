@@ -53,7 +53,7 @@ const NavBar = () => {
 				</Link>
 
 				<Link
-					href="https://docs.pimlico.io/infra/magic-spend"
+					href="https://docs.pimlico.io/infra/flash-fund"
 					target="_blank"
 					className="hover:text-primary flex items-center"
 				>

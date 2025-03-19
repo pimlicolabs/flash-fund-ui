@@ -15,7 +15,7 @@ import { toast } from "react-toastify";
 import { ETH } from "@/utils";
 import type { AddLogFunction } from "../components/log-section";
 import NetworkSelector from "./network-selector";
-import { MagicSpend } from "@/utils/magic-spend";
+import { FlashFund } from "@/utils/flash-fund";
 import { base, optimism, arbitrum } from "viem/chains";
 import { ONEBALANCE_SUPPORTED_CHAINS, OneBalanceChainId } from "@/utils/onebalance/assets";
 
@@ -54,7 +54,7 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 		try {
 			const unstakeDelaySec = 86400; // 1 day in seconds
 
-			const magicSpend = new MagicSpend(config, {
+			const flashFund = new FlashFund(config, {
 				onRequest: (method, params) => {
 					addLog("request", {
 						method,
@@ -68,9 +68,9 @@ export default function AddLock({ addLog, disabled }: AddLockProps) {
 				},
 			});
 
-			magicSpend.setChainId(chainId);
+			flashFund.setChainId(chainId);
 
-			const [target, calldata, value] = await magicSpend.prepareStake(
+			const [target, calldata, value] = await flashFund.prepareStake(
 				resourceLock === "pimlico"
 					? {
 							type: "pimlico_lock",
