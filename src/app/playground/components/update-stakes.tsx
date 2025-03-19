@@ -102,7 +102,11 @@ export default function UpdateLocks({
 									const formatAmount = (amount: bigint) => {
 										const value = Number(formatEther(amount));
 										if (value === 0) return "0";
-										return value < 0.001 ? "<0.001" : value.toFixed(3);
+
+										return value < 0.001 ? "<0.001" : value.toLocaleString(undefined, {
+											minimumFractionDigits: 0,
+											maximumFractionDigits: 3,
+										});
 									};
 
 									const amount = stake.amount - (stake.pending || BigInt(0));
@@ -111,7 +115,7 @@ export default function UpdateLocks({
 										Number(stake.usdValue) / 1_000_000
 									).toLocaleString(undefined, {
 										minimumFractionDigits: 0,
-										maximumFractionDigits: 2,
+										maximumFractionDigits: 3,
 									});
 
 									const nativeCurrency = chain.nativeCurrency;
